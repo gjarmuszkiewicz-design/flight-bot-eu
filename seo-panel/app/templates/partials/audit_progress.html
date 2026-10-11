@@ -1,0 +1,9 @@
+<div class="row" style="gap:16px;align-items:flex-start">
+  <span class="spinner" style="width:22px;height:22px;margin-top:3px"></span>
+  <div style="flex:1">
+    <h2>Audyt w toku</h2>
+    <p class="text-2" style="margin:4px 0 14px">{{ audit.progress }}…</p>
+    <div class="progress"><i></i></div>
+    <p class="small muted" style="margin-top:12px">Skanuję strony, sprawdzam dostęp botów AI, mierzę wydajność{% if settings.anthropic_api_key %} i oceniam treści przez Claude{% endif %}. Możesz zamknąć tę stronę – wyniki zapiszą się same.</p>
+  </div>
+</div>

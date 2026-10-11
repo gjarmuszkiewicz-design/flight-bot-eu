@@ -1,0 +1,144 @@
+{% extends "project_base.html" %}
+{% from "partials/macros.html" import icon, empty with context %}
+{% block head %}<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>{% endblock %}
+{% macro heat(v) -%}
+{%- if v is none -%}<span class="heat h0">—</span>
+{%- else -%}<span class="heat {{ 'h0' if v == 0 else 'h1' if v < 34 else 'h2' if v < 60 else 'h3' if v < 85 else 'h4' }}">{{ v }}%</span>{%- endif -%}
+{%- endmacro %}
+{% block tab %}
+{% set enabled = providers.items()|selectattr(1)|map(attribute=0)|list %}
+{% if not enabled %}
+<div class="callout warning" style="margin-bottom:18px">{{ icon('alert') }}<div><b>Nie podłączono żadnego modelu AI.</b> Dodaj klucze API (OPENAI_API_KEY, ANTHROPIC_API_KEY, PERPLEXITY_API_KEY, GEMINI_API_KEY) – szczegóły w <a href="/ustawienia">Ustawieniach</a>.</div></div>
+{% endif %}
+{% if not project.brand_terms %}
+<div class="callout" style="margin-bottom:18px">{{ icon('info') }}<div>Uzupełnij nazwę marki, warianty nazwy i konkurentów w <a href="/projekty/{{ project.id }}/ustawienia">ustawieniach projektu</a>.</div></div>
+{% endif %}
+
+<div class="grid grid-side">
+  <div class="stack">
+    {% if latest_metrics %}
+    {% set o = latest_metrics.overall %}
+    <div class="grid grid-4">
+      <div class="card kpi"><div class="kpi-label">{{ icon('quote') }} Wzmianki o marce</div><div class="kpi-value">{{ o.mention }}<small>%</small></div><div class="kpi-foot">odpowiedzi wymieniających markę</div></div>
+      <div class="card kpi"><div class="kpi-label">{{ icon('external') }} Cytowania strony</div><div class="kpi-value">{{ o.citation }}<small>%</small></div><div class="kpi-foot">odpowiedzi z linkiem do {{ project.domain }}</div></div>
+      <div class="card kpi"><div class="kpi-label">{{ icon('trending') }} Śr. pozycja</div><div class="kpi-value">{{ o.position or '—' }}</div><div class="kpi-foot">kolejność wśród wymienionych marek</div></div>
+      <div class="card kpi"><div class="kpi-label">{{ icon('users') }} Udział w głosie</div><div class="kpi-value">{{ (latest_metrics.sov|selectattr('name','eq',project.brand_name or project.domain)|map(attribute='share')|first) or 0 }}<small>%</small></div><div class="kpi-foot">wobec konkurentów</div></div>
+    </div>
+
+    {% if metrics.trend|length > 1 %}
+    <div class="card">
+      <div class="card-head"><div><h2>Trend widoczności</h2><p>kolejne pomiary</p></div>
+        <div class="legend"><span><i style="background:var(--series-1)"></i>Wzmianki</span><span><i style="background:var(--series-2)"></i>Cytowania</span></div></div>
+      <div class="card-body"><div class="chart-box"><canvas id="aiTrend"></canvas></div></div>
+    </div>
+    {% endif %}
+
+    <div class="card">
+      <div class="card-head"><div><h2>Zapytania × modele</h2><p>odsetek odpowiedzi, w których pojawia się marka (ostatni pomiar, {{ project.ai_samples }} próby na model)</p></div></div>
+      <div class="table-wrap"><table class="table">
+        <thead><tr><th>Zapytanie</th>{% for p in latest_metrics.by_provider %}<th class="num">{{ PROVIDER_LABELS[p] }}</th>{% endfor %}<th class="num">Cytowania</th></tr></thead>
+        <tbody>
+        {% for row in latest_metrics.prompts %}<tr>
+          <td style="max-width:340px">{{ row.prompt }}</td>
+          {% for p in latest_metrics.by_provider %}<td class="num">{{ heat(row.providers[p].mention if p in row.providers else none) }}</td>{% endfor %}
+          <td class="num">{{ row.citation }}%</td>
+        </tr>{% endfor %}
+        <tr><td><b>Razem</b></td>{% for p, r in latest_metrics.by_provider.items() %}<td class="num">{{ heat(r.mention) }}</td>{% endfor %}<td class="num"><b>{{ o.citation }}%</b></td></tr>
+        </tbody>
+      </table></div>
+    </div>
+
+    <div class="grid grid-2">
+      <div class="card">
+        <div class="card-head"><div><h2>Udział w głosie</h2><p>kogo AI wymienia najczęściej</p></div></div>
+        <div class="card-body">
+          {% if latest_metrics.sov %}<div class="bars">{% for s in latest_metrics.sov %}
+            <div class="bar-row" style="grid-template-columns: 120px 1fr 40px"><span class="truncate" title="{{ s.name }}">{% if s.name == (project.brand_name or project.domain) %}<b style="color:var(--text)">{{ s.name }}</b>{% else %}{{ s.name }}{% endif %}</span><div class="bar"><i class="{{ 'accent' if s.name == (project.brand_name or project.domain) else 'warning' }}" style="width:{{ s.share }}%"></i></div><b>{{ s.share }}%</b></div>
+          {% endfor %}</div>
+          {% else %}<p class="muted small">Ani marka, ani konkurenci nie pojawili się w odpowiedziach. Dodaj konkurentów w ustawieniach, aby porównać się z nimi.</p>{% endif %}
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head"><div><h2>Najczęściej cytowane źródła</h2><p>gdzie warto zdobyć wzmiankę</p></div></div>
+        <div class="card-body">
+          {% if latest_metrics.top_domains %}<div class="bars">{% for t in latest_metrics.top_domains[:10] %}
+            <div class="bar-row" style="grid-template-columns: 150px 1fr 40px"><span class="truncate" title="{{ t.domain }}">{% if t.own %}<b style="color:var(--good-ink)">{{ t.domain }}</b>{% else %}{{ t.domain }}{% endif %}</span><div class="bar"><i class="{{ 'good' if t.own else 'accent' }}" style="width:{{ t.share }}%"></i></div><b>{{ t.share }}%</b></div>
+          {% endfor %}</div>
+          {% else %}<p class="muted small">Brak cytowanych źródeł.</p>{% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><div><h2>Odpowiedzi z ostatniego pomiaru</h2><p>{{ latest|length }} odpowiedzi · marka podświetlona</p></div></div>
+      <div class="card-body" style="max-height:640px;overflow:auto">
+        {% for r in latest %}
+        <details class="answer">
+          <summary>
+            <span class="badge plain">{{ PROVIDER_LABELS[r.provider] }}</span>
+            {% if r.error %}<span class="badge critical">Błąd</span>{% elif r.mentioned %}<span class="badge good">Wzmianka{% if r.position %} · #{{ r.position }}{% endif %}</span>{% else %}<span class="badge">Brak wzmianki</span>{% endif %}
+            {% if r.cited %}<span class="badge good">Cytuje stronę</span>{% endif %}
+            <span class="small truncate" style="flex:1;min-width:160px">{{ r.prompt.text }}</span><span class="small muted">próba {{ r.sample }}</span>
+          </summary>
+          <div class="a-body">
+            {% if r.error %}<pre>{{ r.error }}</pre>{% else %}
+            {{ highlight(r.answer, project.brand_terms + [project.domain] + project.competitor_list|map(attribute='name')|list) }}
+            {% if r.citations %}<div class="cites">{% for c in r.citations %}<a href="{{ c.url }}" target="_blank" rel="noopener" class="{{ 'own' if c.domain.endswith(project.domain) }}">{{ c.domain or c.title }}</a>{% endfor %}</div>{% endif %}
+            {% if r.competitors_mentioned %}<div class="small muted mt">Konkurenci: {% for c in r.competitors_mentioned %}{{ c.name }}{{ ' (cytowany)' if c.cited }}{{ ', ' if not loop.last }}{% endfor %}</div>{% endif %}
+            {% endif %}
+          </div>
+        </details>
+        {% endfor %}
+      </div>
+    </div>
+    {% else %}
+    <div class="card">{% call empty('sparkles', 'Sprawdź, czy AI poleca markę klienta', 'Dodaj zapytania, które zadają potencjalni klienci, a panel zapyta ChatGPT, Claude, Perplexity i Gemini (z wyszukiwaniem w sieci) i zmierzy, czy marka jest wymieniana i cytowana.') %}{% endcall %}</div>
+    {% endif %}
+  </div>
+
+  <div class="stack">
+    <div class="card card-pad">
+      <h2>Pomiar</h2>
+      <p class="small muted" style="margin:6px 0 14px">Automatycznie co poniedziałek. Ostatni: {{ (metrics.trend[-1].date if metrics and metrics.trend else 'nigdy') }}</p>
+      <div class="cites" style="margin:0 0 14px">{% for p, ok in providers.items() %}<span class="badge {{ 'good' if ok else '' }}">{{ PROVIDER_LABELS[p] }}</span>{% endfor %}</div>
+      <form method="post" action="/projekty/{{ project.id }}/ai/uruchom" data-busy="Uruchamiam…">
+        <button class="btn btn-primary" style="width:100%" {{ 'disabled' if running or not enabled }}>{% if running %}<span class="spinner"></span> Pomiar trwa – odśwież za chwilę{% else %}{{ icon('play') }} Zmierz teraz{% endif %}</button>
+      </form>
+      {% if metrics and metrics.errors %}<p class="small muted mt">Nieudanych odpowiedzi (łącznie): {{ metrics.errors }}</p>{% endif %}
+    </div>
+
+    <div class="card">
+      <div class="card-head"><div><h2>Monitorowane zapytania</h2><p>{{ project.prompts|length }} zapytań</p></div></div>
+      <div>
+        {% for pr in project.prompts %}
+        <div class="row-between" style="padding:10px 22px;border-bottom:1px solid var(--border);{{ 'opacity:.5' if not pr.active }}">
+          <span class="small">{{ pr.text }}</span>
+          <span class="row" style="gap:2px">
+            <form method="post" action="/prompty/{{ pr.id }}/przelacz"><button class="btn btn-ghost btn-sm" title="{{ 'Wstrzymaj' if pr.active else 'Wznów' }}">{{ '⏸' if pr.active else '▶' }}</button></form>
+            <form method="post" action="/prompty/{{ pr.id }}/usun" data-confirm="Usunąć to zapytanie i jego historię?"><button class="btn btn-ghost btn-sm" title="Usuń">{{ icon('trash') }}</button></form>
+          </span>
+        </div>
+        {% endfor %}
+      </div>
+      <form method="post" action="/projekty/{{ project.id }}/ai/prompty" class="card-body stack" style="gap:10px">
+        <label class="field">Dodaj zapytania<span class="hint">Jedno na linię. Pisz jak klient, np. „jaki dentysta w Poznaniu robi implanty”.</span>
+          <textarea name="prompts" rows="4" required placeholder="najlepsze biuro rachunkowe w Krakowie&#10;jaki CRM dla małej firmy usługowej&#10;ile kosztuje implant zęba w Poznaniu"></textarea></label>
+        <button class="btn" type="submit">{{ icon('plus') }} Dodaj</button>
+      </form>
+    </div>
+
+    <div class="callout">{{ icon('info') }}<div class="small">Odpowiedzi modeli są losowe, dlatego każde zapytanie wysyłamy kilka razy i podajemy odsetek. Wyniki z API mogą różnić się od tego, co widzi zalogowany użytkownik aplikacji (personalizacja, lokalizacja).</div></div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+{% if metrics and metrics.trend|length > 1 %}
+<script>
+document.addEventListener("DOMContentLoaded", () => lineChart("aiTrend",
+  {{ metrics.trend|map(attribute='date')|list|tojson }},
+  [{label: "Wzmianki", data: {{ metrics.trend|map(attribute='mention')|list|tojson }}, color: "--series-1"},
+   {label: "Cytowania", data: {{ metrics.trend|map(attribute='citation')|list|tojson }}, color: "--series-2"}],
+  {min: 0, max: 100, suffix: "%"}));
+</script>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import icon with context %}
+{% block title %}Ustawienia{% endblock %}
+{% block crumbs %}<strong>Ustawienia i integracje</strong>{% endblock %}
+{% macro integ(name, ok, envs, desc, cost) -%}
+<tr>
+  <td><b>{{ name }}</b><div class="small muted">{{ desc }}</div></td>
+  <td>{% if ok %}<span class="badge good">Podłączone</span>{% else %}<span class="badge">Brak klucza</span>{% endif %}</td>
+  <td class="small"><code>{{ envs }}</code></td>
+  <td class="small muted">{{ cost }}</td>
+</tr>
+{%- endmacro %}
+{% block content %}
+<div class="page-head"><div><h1>Ustawienia i integracje</h1><p>Klucze API ustawiasz jako zmienne środowiskowe (np. w panelu Railway → Variables). Po zmianie aplikacja uruchomi się ponownie.</p></div></div>
+
+<div class="card">
+  <div class="card-head"><div><h2>Integracje</h2><p>każdy moduł działa niezależnie – bez klucza jest po prostu pomijany</p></div></div>
+  <div class="table-wrap"><table class="table">
+    <thead><tr><th>Usługa</th><th>Stan</th><th>Zmienne</th><th>Koszt (orientacyjnie)</th></tr></thead>
+    <tbody>
+      {{ integ('Claude (Anthropic)', settings.anthropic_api_key, 'ANTHROPIC_API_KEY, ANTHROPIC_MODEL', 'Monitoring widoczności + ocena treści w audycie. Model: ' ~ settings.anthropic_model, 'płatne za tokeny') }}
+      {{ integ('ChatGPT (OpenAI)', settings.openai_api_key, 'OPENAI_API_KEY, OPENAI_MODEL', 'Monitoring widoczności z wyszukiwaniem w sieci. Model: ' ~ settings.openai_model, 'płatne za tokeny + wyszukiwania') }}
+      {{ integ('Perplexity', settings.perplexity_api_key, 'PERPLEXITY_API_KEY, PERPLEXITY_MODEL', 'Monitoring widoczności, zwraca listę źródeł. Model: ' ~ settings.perplexity_model, 'płatne za zapytania') }}
+      {{ integ('Gemini (Google)', settings.gemini_api_key, 'GEMINI_API_KEY, GEMINI_MODEL', 'Monitoring z groundingiem w Google Search. Model: ' ~ settings.gemini_model, 'darmowy limit, potem płatne') }}
+      {{ integ('DataForSEO', settings.dataforseo_login and settings.dataforseo_password, 'DATAFORSEO_LOGIN, DATAFORSEO_PASSWORD', 'Pozycje w Google + wykrywanie AI Overviews (zalecane)', 'ułamki centa za frazę') }}
+      {{ integ('Serper', settings.serper_api_key, 'SERPER_API_KEY', 'Pozycje w Google (alternatywa, bez AI Overviews)', 'darmowy limit na start') }}
+      {{ integ('PageSpeed Insights', settings.pagespeed_api_key, 'PAGESPEED_API_KEY', 'Core Web Vitals w audycie. Działa bez klucza, ale z niskim limitem', 'bezpłatne') }}
+      {{ integ('Telegram', settings.telegram_bot_token and settings.telegram_chat_id, 'TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID', 'Alerty o ważnych zmianach na stronach klientów', 'bezpłatne') }}
+    </tbody>
+  </table></div>
+</div>
+
+<div class="grid grid-2 mt">
+  <div class="card card-pad">
+    <h2 style="margin-bottom:12px">Branding raportów PDF</h2>
+    <div class="stack" style="gap:8px">
+      <div class="row-between"><span class="muted">Nazwa</span><b>{{ settings.brand_name }}</b></div>
+      <div class="row-between"><span class="muted">E-mail</span><b>{{ settings.brand_email or '—' }}</b></div>
+      <div class="row-between"><span class="muted">Strona</span><b>{{ settings.brand_website or '—' }}</b></div>
+      <div class="row-between"><span class="muted">Kolor</span><span class="row"><span class="dot" style="background:{{ settings.brand_color }};width:14px;height:14px"></span><code>{{ settings.brand_color }}</code></span></div>
+    </div>
+    <p class="small muted mt">Zmienne: <code>BRAND_NAME</code>, <code>BRAND_EMAIL</code>, <code>BRAND_WEBSITE</code>, <code>BRAND_COLOR</code></p>
+  </div>
+  <div class="card card-pad">
+    <h2 style="margin-bottom:12px">Harmonogram</h2>
+    <div class="stack" style="gap:8px">
+      <div class="row-between"><span>Zmiany na stronach</span><span class="muted">codziennie 6:10</span></div>
+      <div class="row-between"><span>Pozycje w Google</span><span class="muted">poniedziałki 5:20</span></div>
+      <div class="row-between"><span>Widoczność w AI</span><span class="muted">poniedziałki 7:05</span></div>
+    </div>
+    {% if jobs_info %}<p class="small muted mt">Najbliższe uruchomienia: {% for j in jobs_info %}{{ j.id }} – {{ j.next.strftime('%d.%m %H:%M') if j.next else '—' }}{{ ', ' if not loop.last }}{% endfor %}</p>
+    {% else %}<p class="small muted mt">Harmonogram jest wyłączony (SCHEDULER_ENABLED=0).</p>{% endif %}
+    <p class="small muted">W bazie: {{ stats.pages }} stron, {{ stats.issues }} problemów, {{ stats.ai_results }} odpowiedzi AI.</p>
+  </div>
+</div>
+{% endblock %}

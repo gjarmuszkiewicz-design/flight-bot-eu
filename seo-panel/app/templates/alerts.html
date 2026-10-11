@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import icon, empty with context %}
+{% block title %}Alerty{% endblock %}
+{% block crumbs %}<strong>Alerty</strong>{% endblock %}
+{% block topactions %}{% if changes %}<form method="post" action="/alerty/przeczytane"><button class="btn">{{ icon('check') }} Oznacz wszystkie jako przeczytane</button></form>{% endif %}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Alerty i zmiany</h1><p>Zmiany wykryte na stronach wszystkich klientów.</p></div></div>
+<div class="card">
+  {% if changes %}{% set show_project = true %}{% include "partials/change_list.html" %}
+  {% else %}{% call empty('bell', 'Cisza i spokój', 'Nie wykryto żadnych zmian. Monitoring działa codziennie rano dla projektów z włączonym monitoringiem.') %}{% endcall %}{% endif %}
+</div>
+{% endblock %}

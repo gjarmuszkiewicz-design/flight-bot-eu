@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import icon, empty with context %}
+{% block title %}Historia audytów{% endblock %}
+{% block crumbs %}<strong>Historia audytów</strong>{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Historia audytów</h1><p>Wszystkie audyty ze wszystkich projektów.</p></div></div>
+<div class="card">
+  {% if audits %}
+  <div class="table-wrap"><table class="table">
+    <thead><tr><th>Projekt</th><th>Data</th><th>Stan</th><th class="num">Ogólnie</th><th class="num">Technika</th><th class="num">On-page</th><th class="num">Wydajność</th><th class="num">AI</th><th class="num">Strony</th></tr></thead>
+    <tbody>
+    {% for a in audits %}<tr>
+      <td><a href="/projekty/{{ a.project_id }}/audyt?id={{ a.id }}"><b>{{ a.project.name }}</b></a><div class="small muted">{{ a.project.client.name }}</div></td>
+      <td class="small nowrap">{{ a.created_at|date(true) }}</td>
+      <td>{% if a.status == 'done' %}<span class="badge good">Gotowy</span>{% elif a.status == 'error' %}<span class="badge critical">Błąd</span>{% else %}<span class="row small"><span class="spinner"></span> {{ a.progress }}</span>{% endif %}</td>
+      {% for v in [a.score_total, a.score_technical, a.score_onpage, a.score_performance, a.score_aeo] %}
+      <td class="num">{% if v is not none %}<span class="row" style="justify-content:flex-end;gap:6px"><span class="dot {{ grade(v) }}"></span>{{ v|score }}</span>{% else %}—{% endif %}</td>
+      {% endfor %}
+      <td class="num">{{ a.pages_crawled or '—' }}</td>
+    </tr>{% endfor %}
+    </tbody>
+  </table></div>
+  {% else %}{% call empty('scan', 'Brak audytów', 'Audyty pojawią się tutaj po ich uruchomieniu w projekcie.') %}{% endcall %}{% endif %}
+</div>
+{% endblock %}

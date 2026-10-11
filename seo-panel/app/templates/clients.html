@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import icon, ring, favicon, empty with context %}
+{% block title %}Klienci{% endblock %}
+{% block crumbs %}<strong>Klienci i projekty</strong>{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>Klienci i projekty</h1><p>Każdy klient może mieć kilka stron (projektów), np. sklep i bloga.</p></div>
+</div>
+
+<div class="grid grid-main">
+  <div class="card">
+    {% if clients %}
+    <div class="card-head"><div class="search" style="width:100%;max-width:340px">{{ icon('search') }}<input type="search" placeholder="Szukaj klienta lub domeny…" data-table-search="#clients-table"></div><span class="muted small">{{ clients|length }} klientów</span></div>
+    <div class="table-wrap"><table class="table" id="clients-table">
+      <thead><tr><th>Klient</th><th>Projekty</th><th class="num">Wynik</th><th></th></tr></thead>
+      <tbody>
+      {% for c in clients %}<tr>
+        <td><a href="/klienci/{{ c.id }}"><b>{{ c.name }}</b></a><div class="small muted">{{ c.contact_name }}{% if c.contact_email %} · {{ c.contact_email }}{% endif %}</div></td>
+        <td>{% for p in c.projects %}<a href="/projekty/{{ p.id }}" class="badge plain" style="margin:2px">{{ p.domain }}</a>{% else %}<span class="muted small">brak</span>{% endfor %}</td>
+        <td class="num">{% for p in c.projects %}{% if p.last_audit %}<span class="row" style="justify-content:flex-end"><span class="dot {{ grade(p.last_audit.score_total) }}"></span><b>{{ p.last_audit.score_total|score }}</b></span>{% endif %}{% endfor %}</td>
+        <td class="num"><a class="btn btn-sm" href="/klienci/{{ c.id }}">Otwórz</a></td>
+      </tr>{% endfor %}
+      </tbody>
+    </table></div>
+    {% else %}
+      {% call empty('users', 'Brak klientów', 'Dodaj pierwszego klienta w formularzu obok.') %}{% endcall %}
+    {% endif %}
+  </div>
+
+  <div class="card" id="nowy">
+    <div class="card-head"><h2>Nowy klient</h2></div>
+    <form method="post" action="/klienci" class="card-body stack" style="gap:14px">
+      <label class="field">Nazwa firmy<input type="text" name="name" required placeholder="np. Gabinet Stomatologiczny Uśmiech"></label>
+      <label class="field">Osoba kontaktowa<input type="text" name="contact_name"></label>
+      <label class="field">E-mail<input type="email" name="contact_email"></label>
+      <label class="field">Notatki<textarea name="notes" rows="3" placeholder="Zakres współpracy, cele, ustalenia…"></textarea></label>
+      <button class="btn btn-primary" type="submit">{{ icon('plus') }} Dodaj klienta</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

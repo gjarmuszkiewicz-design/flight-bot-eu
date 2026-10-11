@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<title>Raport SEO i AEO – {{ project.domain }}</title>
+{% set brand_color = brand.brand_color %}
+{% macro pring(score, size=110, stroke=10) -%}
+{%- set r = (size - stroke) / 2 -%}{%- set c = 2 * 3.14159 * r -%}{%- set g = grade(score) -%}
+{%- set col = {'good': '#0ca30c', 'warning': '#fab219', 'critical': '#d03b3b', 'none': '#cccccc'}[g] -%}
+<svg width="{{ size }}" height="{{ size }}" viewBox="0 0 {{ size }} {{ size }}">
+  <circle cx="{{ size/2 }}" cy="{{ size/2 }}" r="{{ r }}" fill="none" stroke="#eceef1" stroke-width="{{ stroke }}"/>
+  <circle cx="{{ size/2 }}" cy="{{ size/2 }}" r="{{ r }}" fill="none" stroke="{{ col }}" stroke-width="{{ stroke }}" stroke-linecap="round"
+    stroke-dasharray="{{ c }}" stroke-dashoffset="{{ c * (1 - (score or 0) / 100) }}" transform="rotate(-90 {{ size/2 }} {{ size/2 }})"/>
+  <text x="50%" y="50%" text-anchor="middle" dominant-baseline="central" font-size="{{ size * 0.3 }}" font-weight="700" fill="#12141a" font-family="Helvetica, Arial, sans-serif">{{ score|score }}</text>
+</svg>
+{%- endmacro %}
+<style>
+@page { size: A4; margin: 18mm 16mm 20mm;
+  @bottom-left { content: "{{ brand.brand_name }}{% if brand.brand_website %} · {{ brand.brand_website }}{% endif %}"; font-size: 8pt; color: #858a96; }
+  @bottom-right { content: "Strona " counter(page) " z " counter(pages); font-size: 8pt; color: #858a96; } }
+@page :first { margin: 0; @bottom-left { content: none; } @bottom-right { content: none; } }
+* { box-sizing: border-box; }
+body { font-family: "Inter", "Helvetica Neue", Arial, sans-serif; font-size: 9.6pt; color: #12141a; line-height: 1.5; margin: 0; }
+h1 { font-size: 22pt; margin: 0 0 4mm; letter-spacing: -0.02em; }
+h2 { font-size: 15pt; margin: 0 0 4mm; padding-bottom: 2mm; border-bottom: 2px solid {{ brand_color }}; }
+h3 { font-size: 11pt; margin: 5mm 0 2mm; }
+p { margin: 0 0 3mm; }
+.muted { color: #6b7080; }
+.small { font-size: 8.4pt; }
+section { page-break-before: always; }
+.cover { height: 297mm; padding: 26mm 22mm; position: relative; background: #f6f8fb; }
+.cover .band { position: absolute; top: 0; left: 0; right: 0; height: 9mm; background: {{ brand_color }}; }
+.cover .brand { font-weight: 700; font-size: 12pt; color: {{ brand_color }}; margin-top: 8mm; }
+.cover .title { font-size: 30pt; font-weight: 800; letter-spacing: -0.03em; margin: 32mm 0 4mm; line-height: 1.1; }
+.cover .client { font-size: 15pt; font-weight: 600; }
+.cover .domain { font-size: 12pt; color: #4d5260; margin-top: 1mm; }
+.cover .scorebox { margin-top: 26mm; display: flex; gap: 10mm; align-items: center; }
+.cover .cats { display: flex; gap: 7mm; margin-top: 12mm; }
+.cover .cat { text-align: center; font-size: 8.6pt; font-weight: 600; color: #4d5260; }
+.cover .foot { position: absolute; bottom: 22mm; left: 22mm; right: 22mm; font-size: 9pt; color: #4d5260; border-top: 1px solid #dfe2e7; padding-top: 4mm; }
+table { width: 100%; border-collapse: collapse; margin: 2mm 0 5mm; font-size: 8.8pt; }
+th { text-align: left; font-size: 7.6pt; text-transform: uppercase; letter-spacing: 0.04em; color: #6b7080; padding: 2mm 2.5mm; border-bottom: 1px solid #dfe2e7; background: #f6f8fb; }
+td { padding: 2mm 2.5mm; border-bottom: 1px solid #eceef1; vertical-align: top; }
+td.num, th.num { text-align: right; }
+.badge { display: inline-block; font-size: 7.6pt; font-weight: 700; padding: 0.5mm 2.2mm; border-radius: 3mm; white-space: nowrap; }
+.critical { background: #fdeaea; color: #b02a2a; }
+.warning { background: #fff5de; color: #8a5a00; }
+.notice { background: #e8f1fc; color: #1c5cab; }
+.good { background: #e6f6e6; color: #006300; }
+.kpis { display: flex; gap: 4mm; margin: 3mm 0 6mm; }
+.kpi { flex: 1; background: #f6f8fb; border-radius: 3mm; padding: 4mm; }
+.kpi b { display: block; font-size: 18pt; letter-spacing: -0.02em; }
+.kpi span { font-size: 8pt; color: #6b7080; font-weight: 600; }
+.issue { border: 1px solid #e3e6ea; border-radius: 3mm; padding: 3.5mm 4mm; margin-bottom: 3mm; page-break-inside: avoid; }
+.issue .head { display: flex; gap: 3mm; align-items: center; margin-bottom: 1.5mm; }
+.issue .head b { font-size: 10pt; }
+.fix { background: #f1f9f1; border-radius: 2mm; padding: 2mm 3mm; margin-top: 2mm; }
+.urls { font-size: 7.8pt; color: #6b7080; margin-top: 1.5mm; word-break: break-all; }
+.summary-box { background: #f6f8fb; border-left: 3px solid {{ brand_color }}; padding: 4mm 5mm; border-radius: 0 3mm 3mm 0; margin-bottom: 5mm; }
+.bar { height: 2.4mm; background: #eceef1; border-radius: 2mm; }
+.bar i { display: block; height: 100%; border-radius: 2mm; background: {{ brand_color }}; }
+.prose h2 { font-size: 11.5pt; border: none; margin: 5mm 0 2mm; padding: 0; }
+.prose ul, .prose ol { padding-left: 5mm; margin: 0 0 3mm; }
+.prose li { margin-bottom: 1mm; }
+.check { display: inline-block; width: 4mm; text-align: center; font-weight: 800; }
+.yes { color: #0ca30c; } .no { color: #d03b3b; }
+.two { display: flex; gap: 6mm; } .two > div { flex: 1; }
+</style>
+</head>
+<body>
+
+<!-- Okładka -->
+<div class="cover">
+  <div class="band"></div>
+  <div class="brand">{{ brand.brand_name }}</div>
+  <div class="title">Raport SEO<br>i gotowości pod AI</div>
+  <div class="client">{{ client.name }}</div>
+  <div class="domain">{{ project.url }}</div>
+  <div class="scorebox">
+    {{ pring(audit.score_total, 150, 14) }}
+    <div><div style="font-size:13pt;font-weight:700">Wynik ogólny: {{ audit.score_total|score }}/100</div>
+      <div class="muted">{% if audit.score_total >= 80 %}Strona jest w dobrej kondycji.{% elif audit.score_total >= 50 %}Strona ma solidne podstawy, ale wymaga poprawek.{% else %}Strona wymaga pilnych działań naprawczych.{% endif %}</div></div>
+  </div>
+  <div class="cats">
+    {% for key, val in [('technical', audit.score_technical), ('onpage', audit.score_onpage), ('performance', audit.score_performance), ('aeo', audit.score_aeo)] %}
+    <div class="cat">{{ pring(val, 84, 8) }}<div>{{ CATEGORY_LABELS[key] }}</div></div>
+    {% endfor %}
+  </div>
+  <div class="foot">Data audytu: {{ audit.finished_at|date }} · Przeskanowane adresy: {{ audit.pages_crawled }}<br>
+    Przygotował: {{ brand.brand_name }}{% if brand.brand_email %} · {{ brand.brand_email }}{% endif %}{% if brand.brand_website %} · {{ brand.brand_website }}{% endif %}</div>
+</div>
+
+<!-- Podsumowanie -->
+<section>
+  <h2>Podsumowanie</h2>
+  <div class="summary-box">
+    <p>Przeanalizowaliśmy <b>{{ audit.pages_crawled }}</b> adresów serwisu <b>{{ project.domain }}</b> pod kątem technicznym, treści, wydajności oraz gotowości na wyszukiwarki oparte na sztucznej inteligencji (ChatGPT, Perplexity, Google AI Overviews, Claude).</p>
+    <p style="margin:0">Znaleźliśmy <b>{{ critical|length }}</b> {{ 'problem krytyczny' if critical|length == 1 else 'problemów krytycznych' }}, <b>{{ warnings|length }}</b> ważnych i <b>{{ notices|length }}</b> drobnych.
+    {% if ai and ai.latest %} W odpowiedziach modeli AI marka pojawia się w <b>{{ ai.latest.overall.mention }}%</b> przypadków, a strona jest cytowana jako źródło w <b>{{ ai.latest.overall.citation }}%</b>.{% endif %}</p>
+  </div>
+
+  <div class="kpis">
+    <div class="kpi"><span>Technika</span><b>{{ audit.score_technical|score }}</b></div>
+    <div class="kpi"><span>On-page</span><b>{{ audit.score_onpage|score }}</b></div>
+    <div class="kpi"><span>Wydajność</span><b>{{ audit.score_performance|score }}</b></div>
+    <div class="kpi"><span>Gotowość AI</span><b>{{ audit.score_aeo|score }}</b></div>
+  </div>
+
+  <h3>Priorytety na najbliższe tygodnie</h3>
+  <table>
+    <thead><tr><th style="width:8mm">#</th><th>Zadanie</th><th>Obszar</th><th>Waga</th></tr></thead>
+    <tbody>
+    {% for i in (critical + warnings)[:12] %}
+      <tr><td>{{ loop.index }}</td><td><b>{{ i.title }}</b><div class="small muted">{{ i.recommendation }}</div></td><td class="small">{{ CATEGORY_LABELS[i.category] }}</td><td><span class="badge {{ i.severity }}">{{ SEVERITY_LABELS[i.severity] }}</span></td></tr>
+    {% else %}<tr><td colspan="4">Brak problemów krytycznych i ważnych – gratulacje!</td></tr>{% endfor %}
+    </tbody>
+  </table>
+
+  {% if history|length > 1 %}
+  <h3>Zmiana wyniku w czasie</h3>
+  <table>
+    <thead><tr><th>Data</th><th class="num">Ogólnie</th><th class="num">Technika</th><th class="num">On-page</th><th class="num">Wydajność</th><th class="num">Gotowość AI</th></tr></thead>
+    <tbody>{% for a in history %}<tr><td>{{ a.finished_at|date }}</td><td class="num"><b>{{ a.score_total|score }}</b></td><td class="num">{{ a.score_technical|score }}</td><td class="num">{{ a.score_onpage|score }}</td><td class="num">{{ a.score_performance|score }}</td><td class="num">{{ a.score_aeo|score }}</td></tr>{% endfor %}</tbody>
+  </table>
+  {% endif %}
+</section>
+
+<!-- Zalecenia -->
+<section>
+  <h2>Szczegółowe zalecenia</h2>
+  {% for i in critical + warnings %}
+  <div class="issue">
+    <div class="head"><span class="badge {{ i.severity }}">{{ SEVERITY_LABELS[i.severity] }}</span><b>{{ i.title }}</b><span class="small muted">· {{ CATEGORY_LABELS[i.category] }}{% if i.count %} · {{ i.count }} {{ 'adres' if i.count == 1 else 'adresów' }}{% endif %}</span></div>
+    <div>{{ i.description }}</div>
+    <div class="fix"><b>Zalecenie:</b> {{ i.recommendation }}</div>
+    {% if i.urls %}<div class="urls">Przykłady: {{ i.urls[:4]|join(' · ') }}{% if i.urls|length > 4 %} (i {{ i.urls|length - 4 }} więcej){% endif %}</div>{% endif %}
+  </div>
+  {% endfor %}
+  {% if notices %}
+  <h3>Drobne usprawnienia</h3>
+  <table><tbody>{% for i in notices %}<tr><td style="width:45%"><b>{{ i.title }}</b>{% if i.count %} <span class="muted small">({{ i.count }})</span>{% endif %}</td><td class="small">{{ i.recommendation }}</td></tr>{% endfor %}</tbody></table>
+  {% endif %}
+</section>
+
+<!-- AEO -->
+{% set aeo = audit.data.aeo or {} %}
+<section>
+  <h2>Gotowość pod wyszukiwarki AI</h2>
+  <p>Wyszukiwarki oparte na AI odpowiadają użytkownikom gotowym tekstem i cytują wybrane źródła. Aby strona mogła być cytowana, boty AI muszą mieć do niej dostęp, a treść musi być łatwa do zrozumienia i jednoznacznie przypisana do marki.</p>
+  <h3>Dostęp botów AI</h3>
+  <table>
+    <thead><tr><th>Bot</th><th>Firma</th><th>Cel</th><th>robots.txt</th><th>Serwer</th></tr></thead>
+    <tbody>{% for b in aeo.bots or [] %}<tr>
+      <td><b>{{ b.token }}</b></td><td>{{ b.owner }}</td><td class="small">{{ b.purpose_label }}</td>
+      <td>{% if b.robots_allowed %}<span class="badge good">dozwolony</span>{% else %}<span class="badge {{ 'critical' if b.purpose != 'training' else 'warning' }}">zablokowany</span>{% endif %}</td>
+      <td>{% if b.live_ok is none %}—{% elif b.live_ok %}<span class="badge good">OK</span>{% else %}<span class="badge critical">blokada</span>{% endif %}</td>
+    </tr>{% endfor %}</tbody>
+  </table>
+  {% set s = aeo.signals or {} %}
+  <h3>Sygnały wiarygodności marki</h3>
+  <table><tbody>
+    {% for ok, label in [(s.org_schema, 'Dane strukturalne organizacji (Organization / LocalBusiness)'), (s.sameas, 'Powiązanie z oficjalnymi profilami (sameAs)'), (s.about, 'Strona „O nas”'), (s.contact, 'Strona kontaktowa'), (s.privacy, 'Polityka prywatności'), (s.llms_txt, 'Plik llms.txt dla modeli językowych')] %}
+    <tr><td style="width:8mm"><span class="check {{ 'yes' if ok else 'no' }}">{{ '✓' if ok else '✕' }}</span></td><td>{{ label }}</td></tr>
+    {% endfor %}
+  </tbody></table>
+  <p class="small muted">Dane strukturalne znaleziono na {{ s.pages_with_schema or 0 }} z {{ s.pages_total or 0 }} stron.{% if s.schema_types %} Typy: {{ s.schema_types|join(', ') }}.{% endif %}</p>
+
+  {% if audit.ai_review %}
+  <h3>Ocena treści pod kątem cytowania przez AI</h3>
+  <div class="prose">{{ audit.ai_review|md }}</div>
+  {% endif %}
+</section>
+
+{% if ai and ai.latest %}
+{% set L = ai.latest %}
+<section>
+  <h2>Widoczność marki w odpowiedziach AI</h2>
+  <p>Zadaliśmy modelom AI z dostępem do wyszukiwarki pytania, które zadają potencjalni klienci. Każde pytanie wysłaliśmy kilkukrotnie, ponieważ odpowiedzi modeli różnią się między próbami.</p>
+  <div class="kpis">
+    <div class="kpi"><span>Wzmianki o marce</span><b>{{ L.overall.mention }}%</b></div>
+    <div class="kpi"><span>Cytowania strony</span><b>{{ L.overall.citation }}%</b></div>
+    <div class="kpi"><span>Średnia pozycja</span><b>{{ L.overall.position or '—' }}</b></div>
+    <div class="kpi"><span>Liczba odpowiedzi</span><b>{{ L.overall.n }}</b></div>
+  </div>
+  <div class="two">
+    <div>
+      <h3>Według modelu</h3>
+      <table><thead><tr><th>Model</th><th class="num">Wzmianki</th><th class="num">Cytowania</th></tr></thead>
+      <tbody>{% for p, r in L.by_provider.items() %}<tr><td>{{ provider_labels[p] }}</td><td class="num">{{ r.mention }}%</td><td class="num">{{ r.citation }}%</td></tr>{% endfor %}</tbody></table>
+    </div>
+    <div>
+      <h3>Udział w głosie</h3>
+      <table><tbody>{% for x in L.sov[:6] %}<tr><td style="width:40%">{{ x.name }}</td><td><div class="bar"><i style="width:{{ x.share }}%"></i></div></td><td class="num" style="width:12mm">{{ x.share }}%</td></tr>{% else %}<tr><td class="muted">Brak wzmianek marki i konkurentów.</td></tr>{% endfor %}</tbody></table>
+    </div>
+  </div>
+  <h3>Wyniki dla pytań</h3>
+  <table><thead><tr><th>Pytanie</th><th class="num">Wzmianki</th><th class="num">Cytowania</th></tr></thead>
+  <tbody>{% for row in L.prompts %}<tr><td>{{ row.prompt }}</td><td class="num">{{ row.mention }}%</td><td class="num">{{ row.citation }}%</td></tr>{% endfor %}</tbody></table>
+  {% if L.top_domains %}
+  <h3>Źródła najczęściej cytowane przez AI</h3>
+  <p class="small muted">Obecność marki w tych serwisach (artykuły, katalogi, recenzje) zwiększa szansę na polecenie przez AI.</p>
+  <table><tbody>{% for t in L.top_domains[:10] %}<tr><td>{{ t.domain }}{% if t.own %} <span class="badge good">Twoja strona</span>{% endif %}</td><td class="num">{{ t.share }}% odpowiedzi</td></tr>{% endfor %}</tbody></table>
+  {% endif %}
+  {% if ai.trend|length > 1 %}
+  <h3>Trend</h3>
+  <table><thead><tr><th>Pomiar</th><th class="num">Wzmianki</th><th class="num">Cytowania</th></tr></thead>
+  <tbody>{% for t in ai.trend[-8:] %}<tr><td>{{ t.date }}</td><td class="num">{{ t.mention }}%</td><td class="num">{{ t.citation }}%</td></tr>{% endfor %}</tbody></table>
+  {% endif %}
+</section>
+{% endif %}
+
+{% if keywords %}
+<section>
+  <h2>Pozycje w Google</h2>
+  <table>
+    <thead><tr><th>Fraza</th><th class="num">Pozycja</th><th class="num">Zmiana</th><th>AI Overview</th><th>Adres</th></tr></thead>
+    <tbody>{% for k in keywords %}{% set last = k.last %}{% set prev = k.previous %}<tr>
+      <td><b>{{ k.phrase }}</b></td>
+      <td class="num">{{ last.position or '>100' }}</td>
+      <td class="num">{% if prev and prev.position and last.position %}{% set dlt = prev.position - last.position %}{% if dlt > 0 %}<span style="color:#006300">▲ {{ dlt }}</span>{% elif dlt < 0 %}<span style="color:#b02a2a">▼ {{ -dlt }}</span>{% else %}–{% endif %}{% else %}–{% endif %}</td>
+      <td>{% if last.ai_overview %}{{ 'cytuje stronę' if last.ai_overview_cited else 'bez cytowania' }}{% else %}—{% endif %}</td>
+      <td class="small muted" style="word-break:break-all">{{ last.url.split('//',1)[-1] if last.url else '' }}</td>
+    </tr>{% endfor %}</tbody>
+  </table>
+</section>
+{% endif %}
+
+{% set psi = audit.data.psi %}
+<section>
+  <h2>Wydajność i metodologia</h2>
+  {% if psi and not psi.error %}
+  <h3>Szybkość strony głównej (telefon)</h3>
+  <div class="kpis">
+    <div class="kpi"><span>Wynik PageSpeed</span><b>{{ psi.score if psi.score is not none else '—' }}</b></div>
+    <div class="kpi"><span>LCP (cel ≤ 2,5 s)</span><b>{{ (psi.lcp_ms / 1000)|round(1) ~ ' s' if psi.lcp_ms else '—' }}</b></div>
+    <div class="kpi"><span>CLS (cel ≤ 0,1)</span><b>{{ psi.cls|round(2) if psi.cls is not none else '—' }}</b></div>
+    <div class="kpi"><span>INP (cel ≤ 200 ms)</span><b>{{ psi.inp_ms ~ ' ms' if psi.inp_ms else '—' }}</b></div>
+  </div>
+  {% endif %}
+  <h3>Jak powstał ten raport</h3>
+  <p><b>Audyt techniczny i treści</b> – automatyczne przeskanowanie serwisu (do {{ project.max_pages }} adresów), z poszanowaniem pliku robots.txt: statusy odpowiedzi, przekierowania, indeksowalność, mapy witryny, metadane, nagłówki, treść, obrazy, dane strukturalne.</p>
+  <p><b>Gotowość pod AI</b> – sprawdzenie dostępu botów AI (reguły robots.txt i test odpowiedzi serwera), pliku llms.txt, danych strukturalnych, struktury treści i sygnałów wiarygodności (E-E-A-T).</p>
+  <p><b>Wydajność</b> – Google PageSpeed Insights (dane laboratoryjne i, jeśli dostępne, dane realnych użytkowników Chrome).</p>
+  <p><b>Wynik 0–100</b> – każda kategoria startuje od 100 punktów; problemy obniżają wynik zależnie od wagi i liczby stron, których dotyczą. Wynik ogólny: technika 30%, on-page 25%, wydajność 15%, gotowość AI 30%.</p>
+  <p class="small muted">Odpowiedzi modeli AI pobierane są przez oficjalne API z dostępem do wyszukiwarki i mogą różnić się od odpowiedzi widocznych dla zalogowanych użytkowników (personalizacja, lokalizacja, historia rozmów).</p>
+</section>
+</body>
+</html>
