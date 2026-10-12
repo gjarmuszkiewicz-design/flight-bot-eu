@@ -1,0 +1,12 @@
+{
+  "sklep": {
+    "url": "https://moj-sklep.pl",
+    "user": "admin",
+    "app_password": "abcd efgh ijkl mnop qrst uvwx"
+  },
+  "blog": {
+    "url": "https://moj-blog.pl",
+    "user": "admin",
+    "app_password": "abcd efgh ijkl mnop qrst uvwx"
+  }
+}

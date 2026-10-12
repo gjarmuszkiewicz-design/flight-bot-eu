@@ -1,0 +1,4 @@
+sites.json
+.venv/
+__pycache__/
+*.zip
