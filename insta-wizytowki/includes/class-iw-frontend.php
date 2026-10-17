@@ -13,7 +13,7 @@ class IW_Frontend {
 	}
 
 	public static function register_assets() {
-		wp_register_style( 'iw-fonts', 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@500;600&display=swap', array(), null );
+		wp_register_style( 'iw-fonts', 'https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&family=Montserrat:wght@600;700&family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@500;600&display=swap', array(), null );
 		wp_register_style( 'iw-configurator', IW_URL . 'assets/configurator.css', array( 'iw-fonts' ), IW_VERSION );
 		wp_register_script( 'iw-jspdf', IW_URL . 'assets/vendor/jspdf.umd.min.js', array(), '2.5.1', true );
 		wp_register_script( 'iw-qrcode', IW_URL . 'assets/vendor/qrcode.js', array(), '1.4.4', true );

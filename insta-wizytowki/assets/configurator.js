@@ -51,7 +51,7 @@
 	function fontsReady() {
 		if (!document.fonts || !document.fonts.load) { return Promise.resolve(); }
 		return Promise.all([
-			'500 20px "Playfair Display"', '400 20px Inter', '500 20px Inter', '600 20px Inter', '700 20px Inter'
+			'400 20px Cinzel', '600 20px Montserrat', '700 20px Montserrat', '500 20px "Playfair Display"', '400 20px Inter', '500 20px Inter', '600 20px Inter', '700 20px Inter'
 		].map(function (f) { return document.fonts.load(f).catch(function () {}); }));
 	}
 
@@ -168,7 +168,8 @@
 				avatarSrc: p.avatar,
 				posts: posts.map(function (x, i) { return { img: res[1][i], src: x.image, type: x.type }; }),
 				highlights: hls.map(function (h, i) { return { title: h.title || '', img: res[2][i], src: h.image }; }),
-				front: { name: p.full_name || '', tagline: '', phone: '', email: '', theme: 'marmur' }
+				front: { name: p.full_name || '', tagline: p.category || '', extra: '', address: '', phone: '', email: '', www: '', theme: 'marmur', qr2: { type: 'none', url: '', label: '' } },
+				back: { dark: false, notif: { show: true, likes: 356, comments: 90 } }
 			};
 			self.profileScores = scoreProfile(self.model);
 			self.workspace.hidden = false;
@@ -186,7 +187,7 @@
 		var self = this;
 		opts = opts || {};
 		var input;
-		if (opts.type === 'textarea') { input = el('textarea', { rows: '4', class: 'iw-input' }); }
+		if (opts.type === 'textarea') { input = el('textarea', { rows: String(opts.rows || 4), class: 'iw-input', placeholder: opts.placeholder || '' }); }
 		else if (opts.type === 'select') {
 			input = el('select', { class: 'iw-input' });
 			Object.keys(opts.options).forEach(function (k) { input.appendChild(el('option', { value: k, text: opts.options[k] })); });
@@ -204,9 +205,17 @@
 
 		f.appendChild(el('h3', { text: 'Przód wizytówki' }));
 		f.appendChild(this.field('Imię i nazwisko', function () { return m.front.name; }, function (v) { m.front.name = v; }));
-		f.appendChild(this.field('Hasło pod nazwiskiem', function () { return m.front.tagline; }, function (v) { m.front.tagline = v; }, { placeholder: 'np. Zdrowie • Rozwój • Biznes' }));
+		f.appendChild(this.field('Branża / hasło (wersaliki, Enter = nowa linia)', function () { return m.front.tagline; }, function (v) { m.front.tagline = v; }, { type: 'textarea', rows: 2, placeholder: 'np. Salon fryzjerski' }));
+		f.appendChild(this.field('Usługi / dodatkowa linia', function () { return m.front.extra; }, function (v) { m.front.extra = v; }, { type: 'textarea', rows: 2, placeholder: 'np. Logo ◆ Branding ◆ Strony WWW' }));
+		f.appendChild(this.field('Adres', function () { return m.front.address; }, function (v) { m.front.address = v; }, { type: 'textarea', rows: 2, placeholder: 'ul. Przykładowa 1\nMiasto' }));
 		f.appendChild(this.field('Telefon', function () { return m.front.phone; }, function (v) { m.front.phone = v; }, { type: 'tel', placeholder: '+48 600 000 000' }));
 		f.appendChild(this.field('E-mail', function () { return m.front.email; }, function (v) { m.front.email = v; }, { type: 'email' }));
+		f.appendChild(this.field('Strona www', function () { return m.front.www; }, function (v) { m.front.www = v; }));
+		f.appendChild(this.field('Drugi kod QR', function () { return m.front.qr2.type; }, function (v) { m.front.qr2.type = v; }, { type: 'select', options: { none: 'Brak (tylko Instagram)', facebook: 'Facebook', www: 'Strona www' } }));
+		f.appendChild(el('div', { class: 'iw-grid2' }, [
+			this.field('Link drugiego kodu', function () { return m.front.qr2.url; }, function (v) { m.front.qr2.url = v; }, { placeholder: 'https://facebook.com/…' }),
+			this.field('Podpis pod kodem', function () { return m.front.qr2.label; }, function (v) { m.front.qr2.label = v; })
+		]));
 		f.appendChild(el('h3', { text: 'Tło okładki' }));
 		if ((CFG.backgrounds || []).length) {
 			this.buildBackgroundPicker(f);
@@ -215,6 +224,11 @@
 		}
 
 		f.appendChild(el('h3', { text: 'Profil (tył)' }));
+		f.appendChild(el('div', { class: 'iw-grid3' }, [
+			this.field('Wygląd', function () { return m.back.dark ? 'dark' : 'light'; }, function (v) { m.back.dark = v === 'dark'; }, { type: 'select', options: { light: 'Jasny', dark: 'Ciemny' } }),
+			this.field('Polubienia ♥', function () { return m.back.notif.likes; }, function (v) { m.back.notif.likes = v; m.back.notif.show = v !== '' || m.back.notif.comments !== ''; }, { type: 'number' }),
+			this.field('Komentarze', function () { return m.back.notif.comments; }, function (v) { m.back.notif.comments = v; m.back.notif.show = v !== '' || m.back.notif.likes !== ''; }, { type: 'number' })
+		]));
 		f.appendChild(el('div', { class: 'iw-row' }, [
 			el('button', { type: 'button', class: 'iw-btn', text: 'Zmień zdjęcie profilowe', onclick: function () {
 				pickImage().then(function (img) { if (img) { m.avatarImg = img; m.avatarSrc = 'upload'; self.changed(); } });
@@ -465,7 +479,8 @@
 			fd.append('data', JSON.stringify({
 				username: m.username, name: m.front.name, phone: m.front.phone, email: m.front.email, theme: m.front.theme,
 				state: {
-					front: { name: m.front.name, tagline: m.front.tagline, phone: m.front.phone, email: m.front.email, theme: m.front.theme, bgId: m.front.bgId || null }, fullName: m.fullName, category: m.category, bio: m.bio, website: m.website, counts: m.counts,
+					front: { name: m.front.name, tagline: m.front.tagline, extra: m.front.extra, address: m.front.address, phone: m.front.phone, email: m.front.email, www: m.front.www, qr2: m.front.qr2, theme: m.front.theme, bgId: m.front.bgId || null },
+					back: m.back, fullName: m.fullName, category: m.category, bio: m.bio, website: m.website, counts: m.counts,
 					avatar: m.avatarSrc, posts: m.posts.map(function (p) { return { src: p.src, type: p.type }; }),
 					highlights: m.highlights.map(function (h) { return { title: h.title, src: h.src }; })
 				}

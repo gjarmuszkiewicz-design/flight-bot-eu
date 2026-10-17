@@ -44,6 +44,7 @@
 .iw-field > span:empty { display: none; }
 .iw-hl { flex-wrap: nowrap; margin-bottom: 6px; }
 .iw-hl .iw-field { margin: 0; }
+.iw-grid2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
 .iw-grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
 .iw-hint { font-size: .85em; color: var(--iw-muted); margin: 4px 0 8px; }
 .iw-tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; max-width: 280px; }

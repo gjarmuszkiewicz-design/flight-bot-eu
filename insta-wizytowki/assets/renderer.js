@@ -22,8 +22,8 @@
 	};
 
 	// Kolory tekstu na tłach z biblioteki.
-	var TEXT_ON_DARK = { bg: ['#000000', '#000000'], text: '#f7f1e8', sub: '#ead9bd', icon: '#ead9bd' };
-	var TEXT_ON_LIGHT = { bg: ['#ffffff', '#ffffff'], text: '#231d19', sub: '#4d4239', icon: '#4d4239' };
+	var TEXT_ON_DARK = { bg: ['#000000', '#000000'], text: '#ffffff', sub: '#f1e6d6', icon: '#ffffff' };
+	var TEXT_ON_LIGHT = { bg: ['#ffffff', '#ffffff'], text: '#1e1a17', sub: '#3d342d', icon: '#1e1a17' };
 
 	// ---------------------------------------------------------------- pomocnicze
 
@@ -149,7 +149,7 @@
 		n = Number(n) || 0;
 		if (n >= 1e6) { return (Math.floor(n / 1e5) / 10).toString().replace('.', ',') + ' mln'; }
 		if (n >= 1e4) { return (Math.floor(n / 100) / 10).toString().replace('.', ',') + ' tys.'; }
-		return String(n);
+		return n >= 1000 ? Math.floor(n / 1000) + '\u00a0' + String(n % 1000).padStart(3, '0') : String(n);
 	}
 
 	// ---------------------------------------------------------------- ikony (wektorowe, w mm)
@@ -289,13 +289,105 @@
 		ctx.restore();
 	}
 
+	// ---------------------------------------------------------------- ikony przodu
+
+	function iconPin(ctx, cx, cy, r, color) {
+		ctx.save(); ctx.fillStyle = color;
+		ctx.beginPath();
+		ctx.arc(cx, cy - r * 0.25, r * 0.62, Math.PI * 0.8, Math.PI * 2.2);
+		ctx.lineTo(cx, cy + r * 0.95);
+		ctx.closePath(); ctx.fill();
+		ctx.globalCompositeOperation = 'destination-out';
+		ctx.beginPath(); ctx.arc(cx, cy - r * 0.25, r * 0.24, 0, Math.PI * 2); ctx.fill();
+		ctx.restore();
+	}
+
+	function iconGlobe(ctx, cx, cy, r, color) {
+		ctx.save(); ctx.strokeStyle = color; ctx.lineWidth = r * 0.12;
+		ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.stroke();
+		ctx.beginPath(); ctx.ellipse(cx, cy, r * 0.42, r, 0, 0, Math.PI * 2); ctx.stroke();
+		ctx.beginPath(); ctx.moveTo(cx - r, cy); ctx.lineTo(cx + r, cy); ctx.stroke();
+		ctx.restore();
+	}
+
+	function iconFacebook(ctx, cx, cy, s, color) {
+		ctx.save(); ctx.fillStyle = color;
+		roundRect(ctx, cx - s / 2, cy - s / 2, s, s, s * 0.22); ctx.fill();
+		ctx.fillStyle = '#ffffff'; font(ctx, 700, s * 0.85, 'Arial, sans-serif');
+		ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+		ctx.fillText('f', cx + s * 0.08, cy + s * 0.42);
+		ctx.restore();
+	}
+
+	function iconHeart(ctx, cx, cy, s, color) {
+		ctx.save(); ctx.fillStyle = color; ctx.beginPath();
+		ctx.moveTo(cx, cy + s * 0.42);
+		ctx.bezierCurveTo(cx - s * 0.75, cy - s * 0.05, cx - s * 0.35, cy - s * 0.6, cx, cy - s * 0.22);
+		ctx.bezierCurveTo(cx + s * 0.35, cy - s * 0.6, cx + s * 0.75, cy - s * 0.05, cx, cy + s * 0.42);
+		ctx.fill(); ctx.restore();
+	}
+
+	function iconComment(ctx, cx, cy, s, color) {
+		ctx.save(); ctx.fillStyle = color; ctx.beginPath();
+		ctx.arc(cx, cy, s * 0.42, Math.PI * 0.75, Math.PI * 2.6);
+		ctx.lineTo(cx - s * 0.48, cy + s * 0.45);
+		ctx.closePath(); ctx.fill(); ctx.restore();
+	}
+
 	// ---------------------------------------------------------------- przód
 
+	var FRONT_SERIF = 'Cinzel, "Playfair Display", Georgia, serif';
+	var FRONT_SANS = 'Montserrat, Inter, Arial, sans-serif';
+
+	/** Linie tekstu: z \n i automatycznym łamaniem, z dopasowaniem rozmiaru do maks. liczby linii. */
+	function fitLines(ctx, text, maxW, weight, size, family, maxLines, minSize) {
+		var s = size, lines;
+		for (;;) {
+			font(ctx, weight, s, family);
+			lines = wrapLines(ctx, text, maxW, 99);
+			var widest = Math.max.apply(null, lines.map(function (l) { return ctx.measureText(l).width; }));
+			if ((lines.length <= maxLines && widest <= maxW) || s <= minSize) { break; }
+			s *= 0.95;
+		}
+		return { lines: lines.slice(0, maxLines), size: s };
+	}
+
+	/** Układ przodu: zwraca listę elementów do narysowania i łączną wysokość (mm). */
+	function frontBlocks(ctx, m, maxW, k, u) {
+		var f = m.front, blocks = [];
+		var name = (f.name || m.fullName || '').toUpperCase();
+		if (name) {
+			var n = fitLines(ctx, name, maxW, 400, 6.4 * u * k, FRONT_SERIF, 2, 3.2 * u);
+			blocks.push({ kind: 'text', lines: n.lines, size: n.size, weight: 400, family: FRONT_SERIF, lh: 1.08, gapAfter: 1.6 * u * k, color: 'text', spacing: 0.05 });
+		}
+		if (f.tagline) {
+			var t = fitLines(ctx, f.tagline.toUpperCase(), maxW, 700, 2.5 * u * k, FRONT_SANS, 3, 1.5 * u);
+			blocks.push({ kind: 'text', lines: t.lines, size: t.size, weight: 700, family: FRONT_SANS, lh: 1.3, gapAfter: 1.4 * u * k, color: 'text', spacing: 0.03 });
+		}
+		if (f.extra) {
+			var e = fitLines(ctx, f.extra, maxW, 600, 1.9 * u * k, FRONT_SANS, 3, 1.3 * u);
+			blocks.push({ kind: 'text', lines: e.lines, size: e.size, weight: 600, family: FRONT_SANS, lh: 1.35, gapAfter: 1.6 * u * k, color: 'text' });
+		}
+		var rows = [];
+		if (f.address) { rows.push({ text: f.address.toUpperCase(), icon: iconPin }); }
+		if (f.phone) { rows.push({ text: f.phone, icon: iconPhone }); }
+		if (f.email) { rows.push({ text: f.email.toUpperCase(), icon: iconMail }); }
+		if (f.www) { rows.push({ text: f.www.replace(/^https?:\/\//, '').toUpperCase(), icon: iconGlobe }); }
+		rows.forEach(function (r) {
+			var ir = 1.45 * u * k;
+			var c = fitLines(ctx, r.text, maxW - ir * 2 - 1.2 * u, 700, 2.45 * u * k, FRONT_SANS, 2, 1.4 * u);
+			blocks.push({ kind: 'contact', icon: r.icon, ir: ir, lines: c.lines, size: c.size, lh: 1.25, gapAfter: 1.1 * u * k });
+		});
+		var h = 0;
+		blocks.forEach(function (b) { b.h = b.lines.length * b.size * b.lh; h += b.h + b.gapAfter; });
+		return { blocks: blocks, h: h };
+	}
+
 	function drawFront(ctx, m, spec) {
-		var b = spec.bleed, tw = spec.trimW, th = spec.trimH, safe = spec.safe;
+		var b = spec.bleed, tw = spec.trimW, th = spec.trimH, s = spec.safe;
 		var seed = hashString(m.username || 'x');
 		var cx = tw / 2;
-		var unit = Math.min(tw, th);
+		var u = Math.min(tw, th) / 55;
 		var theme;
 
 		if (m.front.bgImg) {
@@ -306,63 +398,65 @@
 			theme = THEMES[m.front.theme] || THEMES.marmur;
 			background(ctx, theme, -b, -b, tw + 2 * b, th + 2 * b, seed);
 		}
+		var dark = theme !== TEXT_ON_LIGHT && !(THEMES[m.front.theme] && !m.front.bgImg && m.front.theme === 'jasny');
+		var shadow = dark ? 'rgba(0,0,0,0.55)' : 'rgba(255,255,255,0.5)';
 
-		// Zdjęcie profilowe.
-		var r = unit * 0.18, ay = th * 0.175;
-		avatar(ctx, m.avatarImg, cx, ay, r, unit * 0.02, unit * 0.012, theme.bg[1], initialsOf(m.front.name || m.fullName));
+		// Zdjęcie profilowe w ramce Instagrama.
+		var r = 12 * u, ay = s + 1.6 * u + r;
+		avatar(ctx, m.avatarImg, cx, ay, r, 0.9 * u, 0.75 * u, '#ffffff', initialsOf(m.front.name || m.fullName));
 
-		ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+		// Kody QR na dole: Instagram + opcjonalnie drugi (Facebook / strona).
+		var qrs = [{ url: 'https://instagram.com/' + (m.username || ''), label: (m.username || '').toUpperCase(), icon: 'instagram' }];
+		var q2 = m.front.qr2 || {};
+		if (q2.type && q2.type !== 'none' && q2.url) { qrs.push({ url: q2.url, label: (q2.label || '').toUpperCase(), icon: q2.type }); }
+		var box = Math.min(19 * u, (tw - 2 * s - 3 * u) / 2), capH = 2.6 * u, qGap = 3.2 * u;
+		var qTop = th - s - box - capH;
+		var qx0 = cx - (qrs.length * box + (qrs.length - 1) * qGap) / 2;
+		qrs.forEach(function (q, i) {
+			var bx = qx0 + i * (box + qGap);
+			ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.25)'; ctx.shadowBlur = 1 * u;
+			ctx.fillStyle = '#ffffff'; roundRect(ctx, bx, qTop, box, box + capH, 1.2 * u); ctx.fill();
+			ctx.restore();
+			drawQr(ctx, q.url, bx + box * 0.09, qTop + box * 0.09, box * 0.82, q.icon);
+			ctx.fillStyle = '#111111'; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+			fitFont(ctx, q.label, box * 0.9, 700, 1.3 * u, FRONT_SANS, 0.8 * u);
+			ctx.fillText(q.label, bx + box / 2, qTop + box + capH * 0.42);
+		});
 
-		// Imię i nazwisko.
-		var y = ay + r + unit * 0.18;
-		var name = (m.front.name || m.fullName || '').toUpperCase();
-		spacing(ctx, 0.1);
-		fitFont(ctx, name, tw - 2 * safe, 500, unit * 0.105, SERIF, unit * 0.05);
-		ctx.fillStyle = theme.text; ctx.fillText(name, cx, y);
-
-		// Hasło.
-		if (m.front.tagline) {
-			y += unit * 0.075;
-			spacing(ctx, 0.12);
-			var tag = m.front.tagline.toUpperCase();
-			fitFont(ctx, tag, tw - 2 * safe, 600, unit * 0.04, SANS, unit * 0.025);
-			ctx.fillStyle = theme.sub; ctx.fillText(tag, cx, y);
+		// Blok tekstu: wyśrodkowany między zdjęciem a kodami QR, zmniejszany, gdy się nie mieści.
+		var top = ay + r + 1.65 * u + 2.8 * u, bottom = qTop - 2.4 * u, avail = bottom - top;
+		var k = 1, lay;
+		for (var i = 0; i < 10; i++) {
+			lay = frontBlocks(ctx, m, tw - 2 * s, k, u);
+			if (lay.h <= avail) { break; }
+			k *= 0.93;
 		}
-		spacing(ctx, 0);
-
-		// Kontakt.
-		var rows = [];
-		if (m.front.phone) { rows.push({ text: m.front.phone, icon: iconPhone }); }
-		if (m.front.email) { rows.push({ text: m.front.email.toUpperCase(), icon: iconMail }); }
-		var ir = unit * 0.03, gap = unit * 0.025;
-		y += unit * 0.105;
-		rows.forEach(function (row) {
-			spacing(ctx, 0.05);
-			fitFont(ctx, row.text, tw - 2 * safe - ir * 2 - gap, 500, unit * 0.043, SANS, unit * 0.028);
-			var tw2 = ctx.measureText(row.text).width;
-			var total = ir * 2 + gap + tw2, x0 = cx - total / 2;
-			row.icon(ctx, x0 + ir, y - unit * 0.015, ir, theme.icon);
-			ctx.textAlign = 'left'; ctx.fillStyle = theme.text;
-			ctx.fillText(row.text, x0 + ir * 2 + gap, y);
-			ctx.textAlign = 'center';
-			y += unit * 0.085;
+		var y = top + Math.max(0, (avail - lay.h) / 2);
+		ctx.save();
+		ctx.shadowColor = shadow; ctx.shadowBlur = 0.8 * u;
+		lay.blocks.forEach(function (bl) {
+			if (bl.kind === 'text') {
+				font(ctx, bl.weight, bl.size, bl.family); spacing(ctx, bl.spacing || 0);
+				ctx.fillStyle = theme[bl.color]; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+				bl.lines.forEach(function (l, j) { ctx.fillText(l, cx, y + bl.size * (0.82 + j * bl.lh)); });
+			} else {
+				font(ctx, 700, bl.size, FRONT_SANS); spacing(ctx, 0.02);
+				var widest = Math.max.apply(null, bl.lines.map(function (l) { return ctx.measureText(l).width; }));
+				var gap = 1.1 * u, x0 = cx - (bl.ir * 2 + gap + widest) / 2;
+				var iy = y + bl.h / 2 - bl.size * 0.08;
+				ctx.save(); ctx.shadowColor = 'transparent';
+				bl.icon(ctx, x0 + bl.ir, iy, bl.ir, theme.icon);
+				ctx.restore();
+				ctx.fillStyle = theme.text; ctx.textAlign = 'left';
+				bl.lines.forEach(function (l, j) { ctx.fillText(l, x0 + bl.ir * 2 + gap, y + bl.size * (0.82 + j * bl.lh)); });
+			}
+			y += bl.h + bl.gapAfter;
 		});
 		spacing(ctx, 0);
-
-		// Kod QR z linkiem do profilu.
-		var box = unit * 0.37, capH = unit * 0.06;
-		var bx = cx - box / 2, by = th - safe - box - capH;
-		ctx.fillStyle = '#ffffff';
-		roundRect(ctx, bx, by, box, box + capH, unit * 0.02); ctx.fill();
-		drawQr(ctx, 'https://instagram.com/' + (m.username || ''), bx + box * 0.08, by + box * 0.08, box * 0.84);
-		ctx.fillStyle = '#111111';
-		var cap = '@' + (m.username || '').toUpperCase();
-		fitFont(ctx, cap, box * 0.9, 600, unit * 0.03, SANS, unit * 0.018);
-		ctx.textAlign = 'center';
-		ctx.fillText(cap, cx, by + box + capH * 0.45);
+		ctx.restore();
 	}
 
-	function drawQr(ctx, text, x, y, size) {
+	function drawQr(ctx, text, x, y, size, icon) {
 		if (typeof window.qrcode !== 'function') { return; }
 		var qr = window.qrcode(0, 'H');
 		qr.addData(text); qr.make();
@@ -374,11 +468,13 @@
 				if (qr.isDark(r, c)) { ctx.fillRect(x + c * cell, y + r * cell, cell + 0.01, cell + 0.01); }
 			}
 		}
-		// Logo Instagrama w środku (poziom korekcji H wytrzymuje ~30% zasłonięcia).
+		// Ikona w środku (poziom korekcji H wytrzymuje ~30% zasłonięcia).
 		var ls = size * 0.24, lx = x + size / 2, ly = y + size / 2;
 		ctx.fillStyle = '#ffffff';
 		roundRect(ctx, lx - ls / 2, ly - ls / 2, ls, ls, ls * 0.2); ctx.fill();
-		iconInstagram(ctx, lx, ly, ls * 0.7, '#111111', ls * 0.07);
+		if (icon === 'facebook') { iconFacebook(ctx, lx, ly, ls * 0.72, '#111111'); }
+		else if (icon === 'www') { iconGlobe(ctx, lx, ly, ls * 0.33, '#111111'); }
+		else { iconInstagram(ctx, lx, ly, ls * 0.7, '#111111', ls * 0.07); }
 	}
 
 	// ---------------------------------------------------------------- tył (profil Instagram)
@@ -386,31 +482,46 @@
 	function drawBack(ctx, m, spec) {
 		var b = spec.bleed, tw = spec.trimW, th = spec.trimH, s = spec.safe;
 		var seed = hashString(m.username || 'x');
-		var ink = '#000000', gray = '#737373', line = '#dbdbdb';
+		var dark = m.back && m.back.dark;
+		var bg = dark ? '#000000' : '#ffffff', ink = dark ? '#f5f5f5' : '#000000', gray = dark ? '#a8a8a8' : '#737373', line = dark ? '#363636' : '#dbdbdb';
 		var u = tw / 55; // skala względem wizytówki 55 mm szerokości.
+		var notif = (m.back && m.back.notif) || { show: true, likes: 356, comments: 90 };
 
-		ctx.fillStyle = '#ffffff';
+		ctx.fillStyle = bg;
 		ctx.fillRect(-b, -b, tw + 2 * b, th + 2 * b);
 		ctx.textBaseline = 'alphabetic';
 
-		var y = s;
+		var y = s + 1.6 * u;
 
-		// Nagłówek: nazwa użytkownika + ikony.
+		// Nagłówek: @nazwa + dymek powiadomień.
+		var bubbleW = notif.show ? 15 * u : 0;
 		ctx.textAlign = 'left'; ctx.fillStyle = ink;
-		var unameSize = fitFont(ctx, m.username || '', tw - 2 * s - 9 * u, 700, 3 * u, SANS, 1.8 * u);
-		ctx.fillText(m.username || '', s, y + 2.6 * u);
+		var handle = '@' + (m.username || '');
+		var unameSize = fitFont(ctx, handle, tw - 2 * s - bubbleW - 1.5 * u - (m.isVerified ? 2.6 * u : 0), 700, 2.9 * u, SANS, 1.6 * u);
+		ctx.fillText(handle, s, y + 2.6 * u);
 		if (m.isVerified) {
-			verifiedBadge(ctx, s + ctx.measureText(m.username || '').width + 1.4 * u, y + 1.6 * u, unameSize * 0.32);
+			verifiedBadge(ctx, s + ctx.measureText(handle).width + 1.4 * u, y + 1.6 * u, unameSize * 0.32);
 		}
-		iconPlus(ctx, tw - s - 6.2 * u, y + 1.6 * u, 2.4 * u, ink, 0.22 * u);
-		iconMenu(ctx, tw - s - 2.6 * u, y + 0.75 * u, 2.6 * u, ink, 0.25 * u);
-		y += 5 * u;
+		if (notif.show) {
+			var bh = 3.6 * u, bx = tw - s - bubbleW, by = y - 0.4 * u;
+			ctx.fillStyle = '#ff3040';
+			roundRect(ctx, bx, by, bubbleW, bh, 0.8 * u); ctx.fill();
+			ctx.beginPath(); ctx.moveTo(bx + bubbleW / 2 - 1 * u, by + bh); ctx.lineTo(bx + bubbleW / 2, by + bh + 1.1 * u); ctx.lineTo(bx + bubbleW / 2 + 1 * u, by + bh); ctx.fill();
+			font(ctx, 700, 1.7 * u, SANS); ctx.fillStyle = '#ffffff';
+			var ly = by + bh / 2 + 0.6 * u;
+			iconHeart(ctx, bx + 2.2 * u, by + bh / 2, 2.3 * u, '#ffffff');
+			ctx.fillText(String(notif.likes), bx + 3.6 * u, ly);
+			var cxm = bx + 3.6 * u + ctx.measureText(String(notif.likes)).width + 1.9 * u;
+			iconComment(ctx, cxm, by + bh / 2, 2.2 * u, '#ffffff');
+			ctx.fillText(String(notif.comments), cxm + 1.3 * u, ly);
+		}
+		y += 5.6 * u;
 
 		// Zdjęcie + liczniki.
-		var ar = 6.2 * u;
-		avatar(ctx, m.avatarImg, s + ar + 1 * u, y + ar + 0.8 * u, ar, 0.55 * u, 0.4 * u, '#ffffff', initialsOf(m.fullName));
-		var cx0 = s + ar * 2 + 3 * u, colW = (tw - s - cx0) / 3;
-		var stats = [[m.counts.posts, 'posty'], [m.counts.followers, 'obserwujący'], [m.counts.following, 'obserwowani']];
+		var ar = 6.3 * u;
+		avatar(ctx, m.avatarImg, s + ar + 1 * u, y + ar + 0.8 * u, ar, 0.55 * u, 0.45 * u, bg, initialsOf(m.fullName));
+		var cx0 = s + ar * 2 + 3.2 * u, colW = (tw - s - cx0) / 3;
+		var stats = [[m.counts.posts, 'posty'], [m.counts.followers, 'obserwatorzy'], [m.counts.following, 'obserwowani']];
 		ctx.textAlign = 'center';
 		stats.forEach(function (st, i) {
 			var x = cx0 + colW * (i + 0.5);
@@ -418,17 +529,16 @@
 			var num = formatCount(st[0]);
 			fitFont(ctx, num, colW * 0.95, 700, 2.6 * u, SANS, 1.6 * u);
 			ctx.fillText(num, x, y + ar + 0.4 * u);
-			ctx.fillStyle = ink;
 			fitFont(ctx, st[1], colW * 0.98, 400, 1.6 * u, SANS, 1.1 * u);
 			ctx.fillText(st[1], x, y + ar + 3 * u);
 		});
-		y += ar * 2 + 3.2 * u;
+		y += ar * 2 + 3.4 * u;
 
 		// Imię, kategoria, bio, link.
 		ctx.textAlign = 'left';
 		var textW = tw - 2 * s;
 		if (m.fullName) {
-			ctx.fillStyle = ink; fitFont(ctx, m.fullName, textW, 600, 2 * u, SANS, 1.4 * u);
+			ctx.fillStyle = ink; fitFont(ctx, m.fullName, textW, 700, 2 * u, SANS, 1.4 * u);
 			ctx.fillText(ellipsize(ctx, m.fullName, textW), s, y); y += 2.4 * u;
 		}
 		if (m.category) {
@@ -440,15 +550,15 @@
 			wrapLines(ctx, m.bio, textW, 4).forEach(function (l) { ctx.fillText(l, s, y); y += 2.3 * u; });
 		}
 		if (m.website) {
-			ctx.fillStyle = '#00376b'; font(ctx, 600, 1.75 * u, SANS);
+			ctx.fillStyle = dark ? '#e0f1ff' : '#00376b'; font(ctx, 600, 1.75 * u, SANS);
 			ctx.fillText(ellipsize(ctx, m.website.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, ''), textW), s, y); y += 2.3 * u;
 		}
 		y += 0.8 * u;
 
-		// Wyróżnione relacje.
+		// Wyróżnione relacje – duże kółka jak w projektach (do 4 najlepiej, maks. 5).
 		var hl = (m.highlights || []).filter(function (h) { return h && (h.title || h.img); }).slice(0, 5);
 		if (hl.length) {
-			var slot = (tw - 2 * s) / 5, hr = Math.min(3.4 * u, slot * 0.36);
+			var slots = Math.max(4, hl.length), slot = (tw - 2 * s) / slots, hr = Math.min(4.4 * u, slot * 0.4);
 			hl.forEach(function (h, i) {
 				var hx = s + slot * (i + 0.5), hy = y + hr + 0.4 * u;
 				ctx.save();
@@ -457,29 +567,26 @@
 				ctx.beginPath(); ctx.arc(hx, hy, hr - 0.15 * u, 0, Math.PI * 2); ctx.clip();
 				if (h.img) { drawCover(ctx, h.img, hx - hr, hy - hr, hr * 2, hr * 2); }
 				else {
-					ctx.fillStyle = '#f2efec'; ctx.fillRect(hx - hr, hy - hr, hr * 2, hr * 2);
-					ctx.fillStyle = '#b9aea4'; font(ctx, 600, hr * 0.8, SANS); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+					ctx.fillStyle = dark ? '#1c1c1c' : '#f2efec'; ctx.fillRect(hx - hr, hy - hr, hr * 2, hr * 2);
+					ctx.fillStyle = dark ? '#8e8e8e' : '#b9aea4'; font(ctx, 600, hr * 0.8, SANS); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
 					ctx.fillText((h.title || '?').charAt(0).toUpperCase(), hx, hy);
 				}
 				ctx.restore();
 				ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic'; ctx.fillStyle = ink;
-				font(ctx, 400, 1.4 * u, SANS);
-				ctx.fillText(ellipsize(ctx, h.title || '', slot * 0.95), hx, hy + hr + 2.2 * u);
+				font(ctx, 500, 1.45 * u, SANS);
+				ctx.fillText(ellipsize(ctx, h.title || '', slot * 0.98), hx, hy + hr + 2.2 * u);
 			});
 			y += hr * 2 + 3.6 * u;
 		}
 
 		// Zakładki.
 		var tabY = y + 1.5 * u;
-		var tabs = [iconGrid, iconReels, iconTagged];
-		tabs.forEach(function (fn, i) {
+		[iconGrid, iconReels, iconTagged].forEach(function (fn, i) {
 			fn(ctx, tw * (i + 0.5) / 3, tabY, 2.2 * u, i === 0 ? ink : gray, 0.2 * u);
 		});
 		var lineY = tabY + 2.3 * u;
-		ctx.fillStyle = line; ctx.fillRect(-b, lineY, tw + 2 * b, 0.12 * u);
-		ctx.fillStyle = ink; ctx.fillRect(tw / 6 - 4 * u, lineY - 0.12 * u, 8 * u, 0.24 * u);
 
-		// Siatka 3×3 – skrajne kafelki wychodzą na spad, żeby po przycięciu nie było białych pasków.
+		// Siatka 3×3 – skrajne kafelki wychodzą na spad, żeby po przycięciu nie było pasków tła.
 		var gap = 0.3 * u, top = lineY + 0.3 * u;
 		var cw = (tw - 2 * gap) / 3, rh = (th - top - 2 * gap) / 3;
 		for (var i = 0; i < 9; i++) {
