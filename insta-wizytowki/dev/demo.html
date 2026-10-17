@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Konfigurator – demo</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@500;600&display=swap">
+<link rel="stylesheet" href="../assets/configurator.css">
+<style>body{margin:0;padding:24px 16px;background:#fff}main{max-width:1100px;margin:0 auto}</style>
+</head>
+<body>
+<main>
+	<h1 style="font-family:Inter,sans-serif">Insta Wizytówki – demo konfiguratora (bez WordPressa)</h1>
+	<div class="iw-app" data-mode="standalone"></div>
+</main>
+<script>
+// Atrapa REST API WordPressa: obrazy przykładowe generowane w przeglądarce.
+function demoImage(seed, label) {
+	var c = document.createElement('canvas'); c.width = c.height = 400;
+	var x = c.getContext('2d'), h = (seed * 53) % 360;
+	var g = x.createLinearGradient(0, 0, 400, 400);
+	g.addColorStop(0, 'hsl(' + h + ',55%,70%)'); g.addColorStop(1, 'hsl(' + ((h + 60) % 360) + ',55%,40%)');
+	x.fillStyle = g; x.fillRect(0, 0, 400, 400);
+	x.fillStyle = 'rgba(255,255,255,.85)'; x.beginPath(); x.arc(200, 170, 70, 0, 7); x.fill();
+	x.fillRect(110, 260, 180, 140);
+	if (label) { x.fillStyle = '#fff'; x.font = '600 44px sans-serif'; x.textAlign = 'center'; x.fillText(label, 200, 380); }
+	return c.toDataURL('image/jpeg', .9);
+}
+window.IW_CONFIG = {
+	restUrl: '/mock', nonce: 'x', canDownload: true,
+	print: { trimW: 55, trimH: 85, bleed: 3, safe: 4, dpi: 300, cornerRadius: 3, cropMarks: true, slug: 5, jpegQuality: .95 }
+};
+var realFetch = window.fetch;
+window.fetch = function (url) {
+	if (String(url).indexOf('/mock/profile') === 0) {
+		var u = decodeURIComponent(String(url).split('username=')[1] || 'demo').replace(/^@/, '').replace(/.*instagram\.com\//, '').replace(/\/.*/, '');
+		return Promise.resolve(new Response(JSON.stringify({
+			username: u, full_name: 'Anna Kowalska', category: 'Przedsiębiorca', is_verified: true,
+			biography: 'Holistyczne podejście do zdrowia i życia ✨\nZdrowy styl życia 🌿 TOP lider networkmarketingu\nŻycie w zgodzie z moim wewnętrznym JA',
+			website: 'https://www.annakowalska.pl', avatar: demoImage(7),
+			counts: { posts: 301, followers: 3058, following: 281 },
+			highlights: ['Opinie', 'Oferta', 'Wiedza', 'Kolagen', 'Kontakt'].map(function (t, i) { return { title: t, image: i < 3 ? demoImage(20 + i) : null }; }),
+			posts: Array.from({ length: 9 }, function (_, i) { return { image: demoImage(i + 1, String(i + 1)), type: i === 1 ? 'carousel' : (i === 4 ? 'reel' : 'photo') }; })
+		}), { status: 200 }));
+	}
+	return realFetch.apply(this, arguments);
+};
+</script>
+<script src="../assets/vendor/qrcode.js"></script>
+<script src="../assets/vendor/jspdf.umd.min.js"></script>
+<script src="../assets/renderer.js"></script>
+<script src="../assets/configurator.js"></script>
+</body>
+</html>
