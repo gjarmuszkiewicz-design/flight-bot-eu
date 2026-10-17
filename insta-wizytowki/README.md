@@ -23,7 +23,8 @@ na serwer (`wp-content/uploads/insta-wizytowki/cache`), bo linki Instagrama wyga
 ## Druk (drukujsam.pl)
 - Format zawsze **85×55 mm z zaokrąglonymi rogami**, druk dwustronny w kolorze (4+4), kreda mat 350 g.
 - Uszlachetnienie: **folia błysk** albo **folia mat** – ustaw jako atrybut wariantu produktu WooCommerce.
-- W ustawieniach: orientacja projektu (pionowa/pozioma), spad (2 mm), margines bezpieczny (3 mm), DPI, rogi (podgląd).
+- Wg makiety drukujsam (`wizytowka_85x55_zaokraglona_v`): netto **55×85 mm pionowo**, **spad 5 mm** (plik 65×95 mm),
+  **margines wewnętrzny 4 mm**, rogi ok. 3 mm. Wszystko można zmienić w ustawieniach.
 - **Klient widzi tylko wizualizację.** Widok spadów i przycisk PDF widzi wyłącznie obsługa sklepu
   (rola z uprawnieniem `manage_woocommerce`); PDF dla zamówienia powstaje automatycznie przy dodaniu do koszyka.
 - Ten sam silnik (`assets/renderer.js`) rysuje podgląd i druk – wymiary w milimetrach, więc podgląd = druk.
@@ -42,7 +43,6 @@ Konfigurator poleca tła na podstawie kolorów zdjęć z profilu i słów w bio.
 dobiera się sam według jasności tła. Lista haseł do Magnific: `TLA-MAGNIFIC.md`.
 
 ## Do zrobienia
-- promień rogów i orientacja – do potwierdzenia z makietą drukujsam,
 - jeśli wymagany CMYK / PDF/X: konwersja po stronie serwera (Ghostscript) + TrimBox/BleedBox,
 - ewentualnie tekst wektorowy zamiast rastra (jeśli drukarnia tego wymaga).
 

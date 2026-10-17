@@ -20,13 +20,14 @@ class IW_Settings {
 			'cache_hours'       => 48,
 			'rate_limit'        => 30,       // zapytań o profil na godzinę z jednego IP.
 
-			// Specyfikacja druku (mm) – drukujsam.pl, wizytówki 85×55 z zaokrąglonymi rogami,
-			// druk 4+4, kreda mat 350 g, folia błysk lub mat. Spad 2 mm, margines 3 mm wg drukarni.
+			// Specyfikacja druku (mm) – makieta drukujsam.pl „wizytowka_85x55_zaokraglona_v”:
+			// netto 55×85 pionowo, spad 5 mm (brutto 65×95), margines wewnętrzny 4 mm, rogi ok. 3 mm.
+			// Druk 4+4, kreda mat 350 g, folia błysk lub mat.
 			'orientation'       => 'pionowa', // pionowa = 55×85, pozioma = 85×55.
-			'bleed'             => 2,
-			'safe'              => 3,
+			'bleed'             => 5,
+			'safe'              => 4,
 			'dpi'               => 300,
-			'corner_radius'     => 3,        // tylko podgląd (wykrojnik), plik do druku jest prostokątny. Do potwierdzenia z makietą.
+			'corner_radius'     => 3,        // tylko podgląd (wykrojnik), plik do druku jest prostokątny.
 			'crop_marks'        => 0,
 			'slug'              => 5,        // margines na znaczniki cięcia.
 			'jpeg_quality'      => 95,

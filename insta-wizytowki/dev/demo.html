@@ -54,7 +54,7 @@ window.IW_CONFIG = {
 	canDownload: location.search.indexOf('klient') === -1, // ?klient = widok klienta
 	backgrounds: BGS,
 	styles: { jasne: 'Jasne', ciemne: 'Ciemne', damskie: 'Damskie', meskie: 'Męskie', eleganckie: 'Eleganckie', luksusowe: 'Luksusowe / premium', zloto: 'Ze złotem', marmur: 'Marmur', neutralne: 'Neutralne', roslinne: 'Roślinne', minimalistyczne: 'Minimalistyczne' },
-	print: { trimW: 55, trimH: 85, bleed: 2, safe: 3, dpi: 300, cornerRadius: 3, cropMarks: false, slug: 5, jpegQuality: .95 }
+	print: { trimW: 55, trimH: 85, bleed: 5, safe: 4, dpi: 300, cornerRadius: 3, cropMarks: false, slug: 5, jpegQuality: .95 }
 };
 var realFetch = window.fetch;
 window.fetch = function (url) {
