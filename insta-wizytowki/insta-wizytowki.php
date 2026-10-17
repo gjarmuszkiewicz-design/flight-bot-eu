@@ -20,6 +20,7 @@ require_once IW_DIR . 'includes/class-iw-settings.php';
 require_once IW_DIR . 'includes/class-iw-storage.php';
 require_once IW_DIR . 'includes/class-iw-profile-fetcher.php';
 require_once IW_DIR . 'includes/class-iw-rest.php';
+require_once IW_DIR . 'includes/class-iw-backgrounds.php';
 require_once IW_DIR . 'includes/class-iw-frontend.php';
 require_once IW_DIR . 'includes/class-iw-woocommerce.php';
 
@@ -29,6 +30,7 @@ add_action(
 		IW_Settings::init();
 		IW_Storage::init();
 		IW_Rest::init();
+		IW_Backgrounds::init();
 		IW_Frontend::init();
 		if ( class_exists( 'WooCommerce' ) ) {
 			IW_WooCommerce::init();
@@ -36,5 +38,11 @@ add_action(
 	}
 );
 
-register_activation_hook( __FILE__, array( 'IW_Storage', 'activate' ) );
+register_activation_hook(
+	__FILE__,
+	function () {
+		IW_Storage::activate();
+		IW_Backgrounds::activate();
+	}
+);
 register_deactivation_hook( __FILE__, array( 'IW_Storage', 'deactivate' ) );

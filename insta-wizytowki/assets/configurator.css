@@ -52,6 +52,14 @@
 .iw-tile-btn:hover .iw-tile { outline: 2px solid var(--iw-accent); }
 .iw-actions { margin-top: 18px; display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
 
+.iw-bgs { display: grid; grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: 6px; margin-bottom: 10px; max-height: 300px; overflow-y: auto; }
+.iw-bg { padding: 0; border: 2px solid transparent; border-radius: 6px; background: none; cursor: pointer; aspect-ratio: 55 / 85; overflow: hidden; }
+.iw-bg img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.iw-bg.is-active { border-color: var(--iw-accent); }
+.iw-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+.iw-chip { border: 1px solid var(--iw-line); background: #fff; border-radius: 999px; padding: 4px 10px; font: inherit; font-size: .8em; cursor: pointer; }
+.iw-chip.is-active { background: var(--iw-ink); border-color: var(--iw-ink); color: #fff; }
+
 @media (max-width: 760px) {
 	.iw-workspace { grid-template-columns: 1fr; }
 	.iw-preview { position: static; }

@@ -26,9 +26,35 @@ function demoImage(seed, label) {
 	if (label) { x.fillStyle = '#fff'; x.font = '600 44px sans-serif'; x.textAlign = 'center'; x.fillText(label, 200, 380); }
 	return c.toDataURL('image/jpeg', .9);
 }
+// Przykładowe tła (w sklepie: biblioteka „Tła okładek”, np. z Magnific).
+function demoBg(base1, base2, vein, leaves) {
+	var c = document.createElement('canvas'); c.width = 660; c.height = 1020;
+	var x = c.getContext('2d'), g = x.createLinearGradient(0, 0, 300, 1020);
+	g.addColorStop(0, base1); g.addColorStop(1, base2); x.fillStyle = g; x.fillRect(0, 0, 660, 1020);
+	var seed = base1.length * 7 + vein.length;
+	function rnd() { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; }
+	if (vein) { x.strokeStyle = vein; for (var i = 0; i < 18; i++) { x.globalAlpha = .2 + rnd() * .6; x.lineWidth = .5 + rnd() * 3; x.beginPath(); var px = rnd() * 660, py = rnd() * 1020; x.moveTo(px, py); for (var k = 0; k < 30; k++) { px += (rnd() - .5) * 60; py += rnd() * 40; x.lineTo(px, py); } x.stroke(); } }
+	if (leaves) { x.globalAlpha = .55; for (var j = 0; j < 26; j++) { x.save(); x.translate(rnd() < .5 ? rnd() * 140 : 520 + rnd() * 140, rnd() * 1020); x.rotate(rnd() * 6); x.fillStyle = leaves; x.beginPath(); x.ellipse(0, 0, 60, 20, 0, 0, 7); x.fill(); x.restore(); } }
+	x.globalAlpha = 1;
+	return c.toDataURL('image/jpeg', .9);
+}
+var BGS = [
+	['Czarny marmur złoto', '#1d1916', '#080706', '#d6b27a', null, ['ciemne', 'marmur', 'zloto', 'luksusowe', 'eleganckie']],
+	['Biały marmur', '#fbf9f6', '#e9e3db', '#a89a8c', null, ['jasne', 'marmur', 'eleganckie', 'neutralne', 'minimalistyczne']],
+	['Liście eukaliptusa', '#f1f3ec', '#dfe6d6', '', '#7f9a76', ['jasne', 'roslinne', 'neutralne']],
+	['Pudrowy róż złoto', '#f6e1df', '#e6bfbd', '#c9a063', null, ['jasne', 'damskie', 'zloto', 'eleganckie']],
+	['Granat złoto', '#1b2540', '#0b1122', '#caa56a', null, ['ciemne', 'meskie', 'zloto', 'luksusowe', 'eleganckie']],
+	['Butelkowa zieleń', '#173a2c', '#0a1d15', '', '#2f6b4f', ['ciemne', 'roslinne', 'luksusowe']],
+	['Beżowy len', '#efe7dc', '#d9cbb8', '', null, ['jasne', 'neutralne', 'minimalistyczne']],
+	['Grafit', '#3a3a3c', '#1c1c1e', '#77777a', null, ['ciemne', 'meskie', 'minimalistyczne', 'neutralne']]
+].map(function (b, i) { var u = demoBg(b[1], b[2], b[3], b[4]); return { id: i + 1, title: b[0], url: u, thumb: u, styles: b[5] }; });
+
 window.IW_CONFIG = {
-	restUrl: '/mock', nonce: 'x', canDownload: true,
-	print: { trimW: 55, trimH: 85, bleed: 3, safe: 4, dpi: 300, cornerRadius: 3, cropMarks: true, slug: 5, jpegQuality: .95 }
+	restUrl: '/mock', nonce: 'x',
+	canDownload: location.search.indexOf('klient') === -1, // ?klient = widok klienta
+	backgrounds: BGS,
+	styles: { jasne: 'Jasne', ciemne: 'Ciemne', damskie: 'Damskie', meskie: 'Męskie', eleganckie: 'Eleganckie', luksusowe: 'Luksusowe / premium', zloto: 'Ze złotem', marmur: 'Marmur', neutralne: 'Neutralne', roslinne: 'Roślinne', minimalistyczne: 'Minimalistyczne' },
+	print: { trimW: 55, trimH: 85, bleed: 2, safe: 3, dpi: 300, cornerRadius: 3, cropMarks: false, slug: 5, jpegQuality: .95 }
 };
 var realFetch = window.fetch;
 window.fetch = function (url) {

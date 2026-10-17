@@ -20,13 +20,13 @@ class IW_Settings {
 			'cache_hours'       => 48,
 			'rate_limit'        => 30,       // zapytań o profil na godzinę z jednego IP.
 
-			// Specyfikacja druku (mm). Wszystko w jednym miejscu, żeby łatwo podmienić na wymagania drukarni.
-			'trim_w'            => 55,
-			'trim_h'            => 85,
-			'bleed'             => 3,
-			'safe'              => 4,
+			// Specyfikacja druku (mm) – drukujsam.pl, wizytówki 85×55 z zaokrąglonymi rogami,
+			// druk 4+4, kreda mat 350 g, folia błysk lub mat. Spad 2 mm, margines 3 mm wg drukarni.
+			'orientation'       => 'pionowa', // pionowa = 55×85, pozioma = 85×55.
+			'bleed'             => 2,
+			'safe'              => 3,
 			'dpi'               => 300,
-			'corner_radius'     => 3,        // tylko podgląd (wykrojnik), plik do druku jest prostokątny.
+			'corner_radius'     => 3,        // tylko podgląd (wykrojnik), plik do druku jest prostokątny. Do potwierdzenia z makietą.
 			'crop_marks'        => 0,
 			'slug'              => 5,        // margines na znaczniki cięcia.
 			'jpeg_quality'      => 95,
@@ -46,9 +46,10 @@ class IW_Settings {
 	/** Parametry druku przekazywane do przeglądarki. */
 	public static function print_spec() {
 		$s = self::all();
+		$landscape = 'pozioma' === $s['orientation'];
 		return array(
-			'trimW'        => (float) $s['trim_w'],
-			'trimH'        => (float) $s['trim_h'],
+			'trimW'        => $landscape ? 85.0 : 55.0, // format stały: 85×55 mm.
+			'trimH'        => $landscape ? 55.0 : 85.0,
 			'bleed'        => (float) $s['bleed'],
 			'safe'         => (float) $s['safe'],
 			'dpi'          => (int) $s['dpi'],
@@ -75,7 +76,7 @@ class IW_Settings {
 	public static function sanitize( $input ) {
 		$d   = self::defaults();
 		$out = array();
-		$mm  = array( 'trim_w', 'trim_h', 'bleed', 'safe', 'corner_radius', 'slug' );
+		$mm  = array( 'bleed', 'safe', 'corner_radius', 'slug' );
 		foreach ( $d as $key => $default ) {
 			if ( 'crop_marks' === $key ) {
 				$out[ $key ] = empty( $input[ $key ] ) ? 0 : 1;
@@ -141,8 +142,7 @@ class IW_Settings {
 				<h2>Specyfikacja druku</h2>
 				<table class="form-table">
 					<?php
-					self::field( 'trim_w', 'Szerokość netto (mm)', 'number' );
-					self::field( 'trim_h', 'Wysokość netto (mm)', 'number' );
+					self::field( 'orientation', 'Format 85×55 mm – orientacja projektu', 'select', '', array( 'pionowa' => 'Pionowa (55×85)', 'pozioma' => 'Pozioma (85×55)' ) );
 					self::field( 'bleed', 'Spad (mm, z każdej strony)', 'number' );
 					self::field( 'safe', 'Strefa bezpieczna od linii cięcia (mm)', 'number' );
 					self::field( 'dpi', 'Rozdzielczość (DPI)', 'number' );

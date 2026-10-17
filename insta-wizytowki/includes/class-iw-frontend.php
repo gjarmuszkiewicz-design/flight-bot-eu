@@ -31,7 +31,10 @@ class IW_Frontend {
 				'restUrl'     => esc_url_raw( rest_url( IW_Rest::NS ) ),
 				'nonce'       => wp_create_nonce( 'wp_rest' ),
 				'print'       => IW_Settings::print_spec(),
+				// Widok „plik do druku” i pobieranie PDF tylko dla obsługi sklepu – klient widzi samą wizualizację.
 				'canDownload' => current_user_can( 'manage_woocommerce' ) || current_user_can( 'manage_options' ),
+				'backgrounds' => IW_Backgrounds::all(),
+				'styles'      => IW_Backgrounds::style_names(),
 			)
 		);
 	}

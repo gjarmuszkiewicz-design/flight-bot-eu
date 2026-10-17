@@ -81,10 +81,11 @@
 		this.cFront = el('canvas', { class: 'iw-canvas', 'aria-label': 'Przód wizytówki' });
 		this.cBack = el('canvas', { class: 'iw-canvas', 'aria-label': 'Tył wizytówki – profil Instagram' });
 
-		var viewSwitch = el('div', { class: 'iw-switch' }, [
-			this.viewBtn('trimmed', 'Po wycięciu'),
+		// Klient widzi tylko wizualizację; spady i plik do druku – wyłącznie obsługa sklepu.
+		var viewSwitch = CFG.canDownload ? el('div', { class: 'iw-switch' }, [
+			this.viewBtn('trimmed', 'Wizualizacja'),
 			this.viewBtn('print', 'Plik do druku (spady)')
-		]);
+		]) : null;
 
 		this.form = el('div', { class: 'iw-form' });
 		this.actions = el('div', { class: 'iw-actions' });
@@ -169,9 +170,13 @@
 				highlights: hls.map(function (h, i) { return { title: h.title || '', img: res[2][i], src: h.image }; }),
 				front: { name: p.full_name || '', tagline: '', phone: '', email: '', theme: 'marmur' }
 			};
+			self.profileScores = scoreProfile(self.model);
 			self.workspace.hidden = false;
-			self.buildForm();
-			self.redraw();
+			var best = self.recommended()[0];
+			return (best ? self.selectBackground(best) : Promise.resolve()).then(function () {
+				self.buildForm();
+				self.redraw();
+			});
 		});
 	};
 
@@ -202,7 +207,12 @@
 		f.appendChild(this.field('Hasło pod nazwiskiem', function () { return m.front.tagline; }, function (v) { m.front.tagline = v; }, { placeholder: 'np. Zdrowie • Rozwój • Biznes' }));
 		f.appendChild(this.field('Telefon', function () { return m.front.phone; }, function (v) { m.front.phone = v; }, { type: 'tel', placeholder: '+48 600 000 000' }));
 		f.appendChild(this.field('E-mail', function () { return m.front.email; }, function (v) { m.front.email = v; }, { type: 'email' }));
-		f.appendChild(this.field('Motyw', function () { return m.front.theme; }, function (v) { m.front.theme = v; }, { type: 'select', options: themes }));
+		f.appendChild(el('h3', { text: 'Tło okładki' }));
+		if ((CFG.backgrounds || []).length) {
+			this.buildBackgroundPicker(f);
+		} else {
+			f.appendChild(this.field('Motyw', function () { return m.front.theme; }, function (v) { m.front.theme = v; }, { type: 'select', options: themes }));
+		}
 
 		f.appendChild(el('h3', { text: 'Profil (tył)' }));
 		f.appendChild(el('div', { class: 'iw-row' }, [
@@ -239,7 +249,7 @@
 		if (this.mode === 'product') {
 			this.actions.appendChild(el('p', { class: 'iw-hint', text: 'Projekt zostanie dołączony do zamówienia po kliknięciu „Dodaj do koszyka”.' }));
 		}
-		if (this.mode === 'standalone' || CFG.canDownload) {
+		if (CFG.canDownload) {
 			this.actions.appendChild(el('button', { type: 'button', class: 'iw-btn iw-btn-primary', text: 'Pobierz PDF do druku', onclick: function (e) { self.downloadPdf(e.currentTarget); } }));
 		}
 	};
@@ -266,6 +276,113 @@
 		this.dirty = true;
 		if (this.hidden) { this.hidden.value = ''; }
 		this.redraw();
+	};
+
+	// ---------------------------------------------------------------- tła okładki i podpowiedzi
+
+	/** Słowa kluczowe z bio, kategorii i nazwy → style tła. */
+	var KEYWORDS = {
+		roslinne: ['eko', 'natur', 'zioł', 'roślin', 'vegan', 'wegan', 'ogród', 'kwiat', 'floryst', 'joga', 'yoga', 'zdrow', 'bio', 'dietet', 'holisty', '🌿', '🌱', '🌸'],
+		luksusowe: ['luksus', 'premium', 'vip', 'ekskluz', 'nieruchom', 'biżuter', 'jubiler', 'apartament', 'lider', 'top ', '💎'],
+		zloto: ['luksus', 'premium', 'biżuter', 'złot', 'gold', 'glamour', 'jubiler', '✨', '👑'],
+		eleganckie: ['prawn', 'adwokat', 'radca', 'finans', 'doradc', 'biznes', 'ceo', 'consult', 'architekt', 'notariusz', 'przedsiębior', 'manager', 'coach'],
+		damskie: ['beauty', 'makijaż', 'makeup', 'paznok', 'nails', 'brwi', 'rzęs', 'fryzjer', 'stylist', 'kosmetolog', 'moda', 'fashion', 'salon', 'spa', '💅', '💄'],
+		meskie: ['barber', 'trener', 'siłown', 'gym', 'fitness', 'mechanik', 'auto', 'motoryz', 'crossfit', 'budow', 'stolarz'],
+		minimalistyczne: ['design', 'architekt', 'fotograf', 'minimal', 'grafik', 'wnętrz'],
+		kolorowe: ['dzieci', 'event', 'party', 'animator', 'cukier', 'tort', 'zabaw']
+	};
+
+	function scoreProfile(m) {
+		var sc = { eleganckie: 0.5, luksusowe: 0.3 };
+		function add(k, v) { sc[k] = (sc[k] || 0) + v; }
+		var text = [m.bio, m.category, m.fullName, m.username].join(' ').toLowerCase();
+		Object.keys(KEYWORDS).forEach(function (k) {
+			var hits = KEYWORDS[k].filter(function (w) { return text.indexOf(w) !== -1; }).length;
+			if (hits) { add(k, Math.min(3, hits * 1.5)); }
+		});
+		// Kolorystyka profilu: zdjęcie profilowe i posty.
+		var imgs = [m.avatarImg].concat(m.posts.map(function (p) { return p.img; })).filter(Boolean);
+		var stats = imgs.map(function (i) { return R.analyzeImage(i); }).filter(Boolean);
+		if (stats.length) {
+			var avg = stats.reduce(function (a, x) { return { lum: a.lum + x.lum / stats.length, sat: a.sat + x.sat / stats.length }; }, { lum: 0, sat: 0 });
+			var hues = stats.filter(function (x) { return x.sat > 0.2; }).map(function (x) { return x.hue; });
+			var share = function (lo, hi) { return hues.filter(function (h) { return lo <= hi ? h >= lo && h < hi : h >= lo || h < hi; }).length / Math.max(1, stats.length); };
+			if (avg.lum > 0.6) { add('jasne', 2); add('minimalistyczne', 0.5); }
+			if (avg.lum < 0.4) { add('ciemne', 2); add('luksusowe', 0.5); }
+			if (avg.sat < 0.18) { add('neutralne', 1.5); add('minimalistyczne', 0.5); }
+			if (avg.sat > 0.45) { add('kolorowe', 1); }
+			add('roslinne', share(70, 170) * 3);
+			add('zloto', share(25, 55) * 2);
+			add('damskie', share(300, 20) * 2);
+		}
+		return sc;
+	}
+
+	App.prototype.recommended = function () {
+		var sc = this.profileScores || {};
+		return (CFG.backgrounds || []).map(function (bg) {
+			var s = bg.styles.reduce(function (a, st) { return a + (sc[st] || 0); }, 0);
+			return { bg: bg, s: s };
+		}).sort(function (a, b) { return b.s - a.s; }).slice(0, 6).map(function (x) { return x.bg; });
+	};
+
+	App.prototype.selectBackground = function (bg) {
+		var m = this.model, self = this;
+		m.front.bgId = bg.id;
+		return loadImage(bg.url).then(function (img) {
+			if (m.front.bgId !== bg.id) { return; }
+			m.front.bgImg = img;
+			// Jasność tła tam, gdzie stoi tekst (środek karty) – decyduje o kolorze napisów.
+			var st = img ? R.analyzeImage(img, [0.1, 0.35, 0.8, 0.4]) : null;
+			m.front.bgTone = st && st.lum > 0.55 ? 'light' : 'dark';
+			self.changed();
+		});
+	};
+
+	App.prototype.buildBackgroundPicker = function (f) {
+		var self = this;
+		var styles = CFG.styles || {};
+		var grid = el('div', { class: 'iw-bgs' });
+		var filter = null;
+
+		function tile(bg) {
+			var b = el('button', { type: 'button', class: 'iw-bg' + (self.model.front.bgId === bg.id ? ' is-active' : ''), title: bg.title }, [
+				el('img', { src: bg.thumb, alt: bg.title, loading: 'lazy' })
+			]);
+			b.addEventListener('click', function () {
+				self.selectBackground(bg);
+				Array.prototype.forEach.call(f.querySelectorAll('.iw-bg'), function (x) { x.classList.remove('is-active'); });
+				b.classList.add('is-active');
+			});
+			return b;
+		}
+		function fill() {
+			grid.innerHTML = '';
+			var list = filter ? CFG.backgrounds.filter(function (bg) { return bg.styles.indexOf(filter) !== -1; }) : CFG.backgrounds;
+			list.forEach(function (bg) { grid.appendChild(tile(bg)); });
+		}
+
+		var rec = this.recommended();
+		if (rec.length) {
+			f.appendChild(el('p', { class: 'iw-hint', text: 'Polecane do Twojego profilu:' }));
+			var rg = el('div', { class: 'iw-bgs' });
+			rec.forEach(function (bg) { rg.appendChild(tile(bg)); });
+			f.appendChild(rg);
+		}
+		var chips = el('div', { class: 'iw-chips' });
+		[['', 'Wszystkie']].concat(Object.keys(styles).map(function (k) { return [k, styles[k]]; })).forEach(function (st) {
+			var c = el('button', { type: 'button', class: 'iw-chip' + (st[0] === '' ? ' is-active' : ''), text: st[1] });
+			c.addEventListener('click', function () {
+				filter = st[0] || null;
+				Array.prototype.forEach.call(chips.children, function (x) { x.classList.toggle('is-active', x === c); });
+				fill();
+			});
+			chips.appendChild(c);
+		});
+		f.appendChild(el('p', { class: 'iw-hint', text: 'Wszystkie tła:' }));
+		f.appendChild(chips);
+		f.appendChild(grid);
+		fill();
 	};
 
 	// ---------------------------------------------------------------- rysowanie
@@ -348,7 +465,7 @@
 			fd.append('data', JSON.stringify({
 				username: m.username, name: m.front.name, phone: m.front.phone, email: m.front.email, theme: m.front.theme,
 				state: {
-					front: m.front, fullName: m.fullName, category: m.category, bio: m.bio, website: m.website, counts: m.counts,
+					front: { name: m.front.name, tagline: m.front.tagline, phone: m.front.phone, email: m.front.email, theme: m.front.theme, bgId: m.front.bgId || null }, fullName: m.fullName, category: m.category, bio: m.bio, website: m.website, counts: m.counts,
 					avatar: m.avatarSrc, posts: m.posts.map(function (p) { return { src: p.src, type: p.type }; }),
 					highlights: m.highlights.map(function (h) { return { title: h.title, src: h.src }; })
 				}

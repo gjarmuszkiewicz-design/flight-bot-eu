@@ -20,8 +20,12 @@ a przy dodaniu do koszyka powstaje **PDF do druku ze spadami**, dołączony do z
 Można ustawić źródło zapasowe. Wyniki są w pamięci podręcznej (domyślnie 48 h), a zdjęcia kopiowane
 na serwer (`wp-content/uploads/insta-wizytowki/cache`), bo linki Instagrama wygasają.
 
-## Plik do druku
-- Wymiar netto, spad, strefa bezpieczna, DPI, znaczniki cięcia – w ustawieniach (domyślnie 55×85 mm, spad 3 mm, 300 DPI).
+## Druk (drukujsam.pl)
+- Format zawsze **85×55 mm z zaokrąglonymi rogami**, druk dwustronny w kolorze (4+4), kreda mat 350 g.
+- Uszlachetnienie: **folia błysk** albo **folia mat** – ustaw jako atrybut wariantu produktu WooCommerce.
+- W ustawieniach: orientacja projektu (pionowa/pozioma), spad (2 mm), margines bezpieczny (3 mm), DPI, rogi (podgląd).
+- **Klient widzi tylko wizualizację.** Widok spadów i przycisk PDF widzi wyłącznie obsługa sklepu
+  (rola z uprawnieniem `manage_woocommerce`); PDF dla zamówienia powstaje automatycznie przy dodaniu do koszyka.
 - Ten sam silnik (`assets/renderer.js`) rysuje podgląd i druk – wymiary w milimetrach, więc podgląd = druk.
 - PDF: 2 strony (przód, tył), obraz RGB JPEG w pełnej rozdzielczości; tło i siatka zdjęć wychodzą na spad.
 - W panelu zamówienia przy pozycji: miniatury i przycisk **„Pobierz PDF do druku”**.
@@ -32,10 +36,15 @@ Porzucone projekty (bez zamówienia) są usuwane po 30 dniach (WP-Cron).
 Na Apache `.htaccess` blokuje bezpośredni dostęp do PDF/JSON; na nginx dodaj regułę:
 `location ~* /uploads/insta-wizytowki/.*\.(pdf|json|txt)$ { deny all; }`
 
-## Do zrobienia po otrzymaniu specyfikacji drukarni
-- wymiary, spad, strefa bezpieczna, zaokrąglenie rogów,
+## Tła okładek
+Menu **Tła okładek** w panelu: obraz + style (jasne, ciemne, damskie, męskie, złoto, roślinne…).
+Konfigurator poleca tła na podstawie kolorów zdjęć z profilu i słów w bio. Kolor napisów (jasny/ciemny)
+dobiera się sam według jasności tła. Lista haseł do Magnific: `TLA-MAGNIFIC.md`.
+
+## Do zrobienia
+- promień rogów i orientacja – do potwierdzenia z makietą drukujsam,
 - jeśli wymagany CMYK / PDF/X: konwersja po stronie serwera (Ghostscript) + TrimBox/BleedBox,
 - ewentualnie tekst wektorowy zamiast rastra (jeśli drukarnia tego wymaga).
 
 ## Test lokalny
-`dev/demo.html` – konfigurator z atrapą API, działa bez WordPressa (otwórz przez lokalny serwer HTTP).
+`dev/demo.html` – konfigurator z atrapą API i przykładowymi tłami, działa bez WordPressa (wystarczy otworzyć w przeglądarce). `dev/demo.html?klient` – widok klienta.

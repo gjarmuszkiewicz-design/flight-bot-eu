@@ -21,6 +21,10 @@
 		puder: { label: 'Pudrowy róż', bg: ['#f7e3e1', '#e9c4c3'], veins: '#ffffff', text: '#3d2b2b', sub: '#5e4545', icon: '#5e4545' }
 	};
 
+	// Kolory tekstu na tłach z biblioteki.
+	var TEXT_ON_DARK = { bg: ['#000000', '#000000'], text: '#f7f1e8', sub: '#ead9bd', icon: '#ead9bd' };
+	var TEXT_ON_LIGHT = { bg: ['#ffffff', '#ffffff'], text: '#231d19', sub: '#4d4239', icon: '#4d4239' };
+
 	// ---------------------------------------------------------------- pomocnicze
 
 	function mulberry32(seed) {
@@ -289,12 +293,19 @@
 
 	function drawFront(ctx, m, spec) {
 		var b = spec.bleed, tw = spec.trimW, th = spec.trimH, safe = spec.safe;
-		var theme = THEMES[m.front.theme] || THEMES.marmur;
 		var seed = hashString(m.username || 'x');
 		var cx = tw / 2;
 		var unit = Math.min(tw, th);
+		var theme;
 
-		background(ctx, theme, -b, -b, tw + 2 * b, th + 2 * b, seed);
+		if (m.front.bgImg) {
+			// Tło z biblioteki (np. z Magnific) – kolory tekstu zależą od jasności tła.
+			theme = m.front.bgTone === 'light' ? TEXT_ON_LIGHT : TEXT_ON_DARK;
+			drawCover(ctx, m.front.bgImg, -b, -b, tw + 2 * b, th + 2 * b);
+		} else {
+			theme = THEMES[m.front.theme] || THEMES.marmur;
+			background(ctx, theme, -b, -b, tw + 2 * b, th + 2 * b, seed);
+		}
 
 		// Zdjęcie profilowe.
 		var r = unit * 0.18, ay = th * 0.175;
@@ -539,5 +550,35 @@
 		ctx.restore();
 	}
 
-	window.IWRenderer = { render: render, themes: THEMES, formatCount: formatCount };
+	/**
+	 * Średnia jasność (0–1), nasycenie i odcień obrazka – do doboru koloru tekstu i podpowiedzi teł.
+	 * Opcjonalnie tylko z wycinka (rx, ry, rw, rh w ułamkach 0–1).
+	 */
+	function analyzeImage(img, region) {
+		var c = document.createElement('canvas'), n = 24;
+		c.width = c.height = n;
+		var x = c.getContext('2d', { willReadFrequently: true });
+		var rg = region || [0, 0, 1, 1];
+		var W = img.naturalWidth, H = img.naturalHeight;
+		x.drawImage(img, rg[0] * W, rg[1] * H, rg[2] * W, rg[3] * H, 0, 0, n, n);
+		var d;
+		try { d = x.getImageData(0, 0, n, n).data; } catch (e) { return null; }
+		var lum = 0, sat = 0, sx = 0, sy = 0, cnt = n * n;
+		for (var i = 0; i < d.length; i += 4) {
+			var r = d[i] / 255, g = d[i + 1] / 255, bl = d[i + 2] / 255;
+			var mx = Math.max(r, g, bl), mn = Math.min(r, g, bl);
+			lum += 0.2126 * r + 0.7152 * g + 0.0722 * bl;
+			var s2 = mx === 0 ? 0 : (mx - mn) / mx;
+			sat += s2;
+			if (mx !== mn) {
+				var h = mx === r ? ((g - bl) / (mx - mn)) % 6 : mx === g ? (bl - r) / (mx - mn) + 2 : (r - g) / (mx - mn) + 4;
+				var a = h / 6 * Math.PI * 2;
+				sx += Math.cos(a) * s2; sy += Math.sin(a) * s2;
+			}
+		}
+		var hue = (Math.atan2(sy, sx) / (Math.PI * 2) * 360 + 360) % 360;
+		return { lum: lum / cnt, sat: sat / cnt, hue: hue };
+	}
+
+	window.IWRenderer = { render: render, themes: THEMES, formatCount: formatCount, analyzeImage: analyzeImage };
 })();
