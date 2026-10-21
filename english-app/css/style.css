@@ -247,7 +247,26 @@ details summary { cursor: pointer; color: var(--blue); font-weight: 600; margin:
 
 /* ---------- Wideo ---------- */
 .video-wrap { position: relative; padding-top: 56.25%; border-radius: 14px; overflow: hidden; background: #000; }
-.video-wrap iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+.video-wrap iframe, .video-wrap .player { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+.video-wrap.short { padding-top: 0; width: min(100%, 360px); aspect-ratio: 9 / 16; margin: 0 auto; }
+.broken { background: var(--red-bg); border-radius: 14px; padding: 12px; margin-top: 12px; }
+.vmeta { margin: 10px 0; font-size: 0.88rem; }
+.steps ol { margin: 6px 0 0; padding-left: 20px; }
+.vgrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 10px; }
+.vcard { display: flex; flex-direction: column; gap: 4px; text-decoration: none; color: var(--text); min-width: 0; }
+.vcard.big { grid-column: 1 / -1; }
+.vthumb { position: relative; display: block; border-radius: 12px; overflow: hidden; background: var(--soft); aspect-ratio: 16 / 9; }
+.vthumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.vbadge, .vdone { position: absolute; font-style: normal; font-size: 0.72rem; font-weight: 800; padding: 2px 6px; border-radius: 6px; }
+.vbadge { left: 6px; bottom: 6px; background: var(--red); color: #fff; }
+.vdone { right: 6px; top: 6px; background: rgba(255, 255, 255, 0.9); }
+.vtitle { font-weight: 700; font-size: 0.92rem; line-height: 1.25; }
+.vcard.big .vtitle { font-size: 1.02rem; }
+.vchapter summary { display: flex; justify-content: space-between; align-items: center; color: var(--text); font-weight: 800; }
+.series { margin-top: 12px; }
+.series p { margin: 2px 0 0; font-size: 0.9rem; }
+.catch { background: var(--soft); border: 2px solid var(--line); border-radius: 12px; font-size: 1.2rem; padding: 4px 8px; cursor: pointer; }
+.catch.on { background: var(--green-bg); border-color: var(--green); }
 .row { display: flex; gap: 12px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--line); }
 .row > div { flex: 1; }
 .row.link { text-decoration: none; color: var(--text); }

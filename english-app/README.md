@@ -13,7 +13,7 @@ Aplikacja na telefon do nauki **mówienia** po angielsku. Mechanika podobna do D
 | 🔁 **Powtórki** | system Leitnera: zwrot wraca po 1, 2, 4, 8, 16 dniach; błąd = wraca od początku. Zaległe zwroty **wplatają się w nowe lekcje**, więc słówka z lotniska wrócą w lekcji o hotelu |
 | 🎯 **Motywacja** | XP, cel dzienny, seria dni 🔥, 3 wyzwania dnia, 13 odznak, wykres tygodnia |
 | 🤖 **Rozmowa z AI** | 8 scenek (barista, odprawa, hotel, lekarz, rozmowa o pracę…). Mówisz do mikrofonu → AI odpowiada głosem → mikrofon sam się włącza (tryb na żywo). Pod Twoją wypowiedzią pojawia się 💡 podpowiedź po polsku, jak powiedzieć lepiej |
-| 🎬 **Wideo** | wklejasz link do YouTube (także Shorts) → film odtwarza się w aplikacji → odpowiadasz na pytania na głos. Z kluczem AI pytania i lista zwrotów są dopasowane do filmu, a zwroty można dodać do powtórek |
+| 🎬 **Wideo** | wbudowana biblioteka **~60 scenek** przypisanych do konkretnych lekcji + seriale (VOA *Let's Learn English*, BBC *English at Work*). Aplikacja **sama podsuwa** scenki: na ekranie głównym („Scenka dla Ciebie”), po każdej lekcji („Zobacz to w prawdziwej scence”) i w zakładce 🎬 („Polecane dla Ciebie”). Przy filmie: zwroty z lekcji do wyłapania 👂 i pytania do odpowiedzi na głos. Można też dodać własny link (także Shorts) |
 | 📱 **Telefon** | PWA – instalujesz z przeglądarki jak zwykłą aplikację, działa offline (poza AI i wideo), tryb ciemny |
 | 💾 **Kopia** | eksport/import postępu do pliku |
 
@@ -61,7 +61,13 @@ Modele do wyboru w ustawieniach: **Claude Opus 5.5** (domyślnie, najlepsze rozm
 - Transkrypcję filmu znajdziesz na YouTube: *…więcej → Pokaż transkrypcję*. Wklej ją przy dodawaniu filmu, a AI ułoży pytania i wypisze zwroty.
 - Telewizja: materiały TVP/BBC iPlayer itp. są chronione i nie wolno ich kopiować do aplikacji. Wyjątek: treści na wolnych licencjach (Creative Commons, domena publiczna – np. archive.org, Wikimedia Commons).
 
-**Następny krok (do zrobienia):** gotowa, wbudowana biblioteka ~50 krótkich scenek przypisanych do rozdziałów (VOA – jako pliki; BBC/YouTube – jako osadzenia) z pytaniami przygotowanymi wcześniej.
+### Jak działa biblioteka scenek
+
+- Lista filmów jest w `js/library.js`: każdy film ma ID z YouTube, tytuł i lekcję, do której pasuje. Filmy znalazłem przez wyszukiwarkę (lekcje dialogowe z kanałów edukacyjnych, VOA i BBC).
+- Film jest tylko **podglądem w oficjalnym odtwarzaczu YouTube** (tryb bez ciasteczek `youtube-nocookie.com`). Nic nie jest pobierane ani zapisywane – to tak, jakbyś oglądał go na YouTube, tylko wewnątrz aplikacji.
+- **Podpowiadanie:** najpierw scenki do lekcji, którą właśnie przerabiasz, potem do niedawno ukończonych (powtórka w nowym kontekście), na końcu tematy, które są przed Tobą. Obejrzane nie wracają do polecanych.
+- **Samonaprawianie:** część autorów blokuje odtwarzanie poza YouTube albo usuwa filmy. Aplikacja to wykrywa (przez YouTube IFrame API), ukrywa taki film, proponuje link „Otwórz w YouTube” i następną scenkę.
+- Dodanie filmu do biblioteki = jedna linijka w `js/library.js`, np. `{ id: "ID_Z_LINKU", lesson: "hotel-2", title: "…", src: "yt" }`.
 
 ## Plan rozwoju
 

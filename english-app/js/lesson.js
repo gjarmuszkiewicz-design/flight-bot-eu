@@ -71,7 +71,7 @@ function reviewExercise(rec) {
 
 // ---------- Sesja ----------
 
-export function runSession(root, { title, queue, lessonId, onExit }) {
+export function runSession(root, { title, queue, lessonId, onExit, finishVideo }) {
   const total = queue.filter((e) => e.type !== "intro").length || 1;
   let done = 0;
   let firstTry = 0;
@@ -180,7 +180,9 @@ export function runSession(root, { title, queue, lessonId, onExit }) {
         <p class="muted">${mistakes ? "Zwroty, z którymi był kłopot, wrócą w powtórkach." : "Bez błędów – tak trzymaj!"}</p>
       </div>`;
     foot.className = "ex-foot";
-    foot.innerHTML = `<button class="btn btn-primary" data-act="done">Kontynuuj</button>`;
+    const video = finishVideo?.();
+    foot.innerHTML = `${video ? `<a class="btn btn-ghost" href="${video.href}">${escapeHtml(video.label)}</a>` : ""}
+      <button class="btn btn-primary" data-act="done">Kontynuuj</button>`;
     foot.querySelector('[data-act="done"]').onclick = () => onExit({ xp: totalXp, accuracy });
   }
 

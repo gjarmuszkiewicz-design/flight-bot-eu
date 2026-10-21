@@ -15,6 +15,8 @@ const DEFAULT_STATE = {
   quests: { day: null, list: [] },
   settings: { rate: 0.95, voiceURI: "", autoListen: true, apiKey: "", model: "claude-opus-5-5" },
   videos: [], // własne filmy użytkownika
+  watched: {}, // ytId: kiedy obejrzany
+  hiddenVideos: {}, // ytId: filmy, których nie da się osadzić
 };
 
 let state = load();

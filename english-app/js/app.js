@@ -6,6 +6,7 @@ import { buildLessonQueue, buildReviewQueue, runSession } from "./lesson.js";
 import { speak, listen, canListen, stopSpeaking, englishVoices, escapeHtml } from "./speech.js";
 import { SCENARIOS, chatTurn, videoQuestions, describeError } from "./ai.js";
 import { SOURCES, TOPIC_SEARCHES, youtubeSearchUrl, parseYouTubeId, embedUrl, GENERIC_TASKS } from "./videos.js";
+import { LIBRARY, SERIES, SRC_LABEL, CHAPTER_TASKS, thumbUrl, watchUrl } from "./library.js";
 
 const app = document.getElementById("app");
 const LANG = COURSE.lang;
@@ -48,7 +49,12 @@ function route() {
   const [tab, arg] = (location.hash.slice(2) || "learn").split("/");
   if (tab === "lesson") return openLesson(arg);
   if (tab === "talk" && arg) return openChat(arg);
-  if (tab === "video" && arg) return openVideo(arg);
+  if (tab === "watch" && arg) return openWatch(arg);
+  if (tab === "video" && arg) {
+    // stare linki do własnych filmów
+    const own = store.getState().videos.find((v) => v.id === arg);
+    return (location.hash = own ? `#/watch/${own.ytId}` : "#/video");
+  }
   const screens = { learn: screenLearn, review: screenReview, talk: screenTalk, video: screenVideo, me: screenMe };
   (screens[tab] || screenLearn)(tab);
 }
@@ -82,6 +88,7 @@ function screenLearn() {
   const st = store.getState();
   const nextLesson = allLessons().find((l) => store.lessonProgress(l.id).level === 0 && isUnlocked(l.id));
   const due = store.dueItems(50).length;
+  const recVideo = recommendVideos(1)[0];
 
   const el = shell("learn", `
     ${!st.profile.name ? `<div class="card welcome">
@@ -103,6 +110,11 @@ function screenLearn() {
       ${nextLesson ? `<a class="btn btn-primary big" href="#/lesson/${nextLesson.id}">▶ Kontynuuj: ${escapeHtml(nextLesson.title)}</a>` : ""}
       ${due ? `<a class="btn btn-ghost" href="#/review">🔁 Do powtórki: ${due}</a>` : ""}
     </div>
+    ${recVideo ? `<section class="card">
+      <h3>🎬 Scenka dla Ciebie</h3>
+      <p class="muted">Pasuje do tego, czego się teraz uczysz.</p>
+      ${videoCard(recVideo, { big: true })}
+    </section>` : ""}
     ${COURSE.chapters.map((ch) => {
       const doneCount = ch.lessons.filter((l) => store.lessonProgress(l.id).level >= 1).length;
       return `
@@ -146,6 +158,10 @@ function openLesson(id) {
     title: found.lesson.title,
     lessonId: id,
     queue: buildLessonQueue(found.lesson, level),
+    finishVideo: () => {
+      const v = videosForLesson(id).find((x) => !store.getState().watched[x.id]) || videosForLesson(id)[0];
+      return v ? { href: `#/watch/${v.id}`, label: "🎬 Zobacz to w prawdziwej scence" } : null;
+    },
     onExit: () => { location.hash = "#/learn"; flushToasts(); },
   });
 }
@@ -297,32 +313,82 @@ function openChat(id) {
 
 // ---------- Ekran: Wideo ----------
 
+// Podsuwanie scenek: najpierw temat, który właśnie przerabiasz, potem niedawno ukończone lekcje
+// (żeby treść wróciła w nowym kontekście), na końcu tematy, które dopiero przed Tobą.
+function recommendVideos(n = 3) {
+  const st = store.getState();
+  const lessons = allLessons();
+  let last = -1;
+  lessons.forEach((l, i) => { if (store.lessonProgress(l.id).level >= 1) last = i; });
+  const score = (v) => {
+    const i = lessons.findIndex((l) => l.id === v.lesson);
+    if (i === last + 1) return -1;
+    if (i <= last) return last - i;
+    return 100 + i;
+  };
+  const pool = LIBRARY.filter((v) => !st.watched[v.id] && !st.hiddenVideos[v.id]).sort((a, b) => score(a) - score(b));
+  // najwyżej jeden film z danej lekcji w polecanych, żeby była różnorodność
+  const picked = [];
+  const seen = new Set();
+  for (const v of pool) if (picked.length < n && !seen.has(v.lesson)) { picked.push(v); seen.add(v.lesson); }
+  for (const v of pool) if (picked.length < n && !picked.includes(v)) picked.push(v);
+  return picked;
+}
+
+function videosForLesson(lessonId) {
+  const st = store.getState();
+  return LIBRARY.filter((v) => v.lesson === lessonId && !st.hiddenVideos[v.id]);
+}
+
+function videoCard(v, { big = false } = {}) {
+  const st = store.getState();
+  const found = v.lesson ? findLesson(v.lesson) : null;
+  return `<a class="vcard ${big ? "big" : ""}" href="#/watch/${v.id}">
+    <span class="vthumb"><img src="${thumbUrl(v.id)}" alt="" loading="lazy" onerror="this.style.visibility='hidden'">${v.short ? '<i class="vbadge">Short</i>' : ""}${st.watched[v.id] ? '<i class="vdone">✅</i>' : ""}</span>
+    <span class="vtitle">${escapeHtml(v.title)}</span>
+    ${found ? `<small class="muted">${found.chapter.emoji} ${escapeHtml(found.lesson.title)}</small>` : ""}
+  </a>`;
+}
+
 function screenVideo() {
   const st = store.getState();
+  const recs = recommendVideos(3);
   const el = shell("video", `
     <section class="card">
       <h2>🎬 Scenki wideo</h2>
-      <p class="muted">Znajdź krótki film (najlepiej 1–5 min), wklej link i odpowiadaj na pytania na głos. Filmy odtwarzamy oficjalnym odtwarzaczem YouTube – legalnie i za darmo.</p>
-      <label>Link do filmu YouTube<input id="yt" placeholder="https://youtu.be/… lub /shorts/…"></label>
+      <p class="muted">Krótkie filmy dobrane do Twoich lekcji. Oglądasz w aplikacji, wyłapujesz zwroty z lekcji i odpowiadasz na głos.</p>
+      ${recs.length ? `<h3>Polecane dla Ciebie</h3><div class="vgrid">${recs.map((v) => videoCard(v, { big: true })).join("")}</div>` : `<p>Obejrzałeś wszystkie scenki z biblioteki 🎉 Dodaj własne poniżej.</p>`}
+    </section>
+    ${COURSE.chapters.map((ch) => {
+      const vids = LIBRARY.filter((v) => v.lesson.startsWith(ch.id + "-") && !st.hiddenVideos[v.id]);
+      if (!vids.length) return "";
+      const seenCount = vids.filter((v) => st.watched[v.id]).length;
+      return `<details class="card vchapter">
+        <summary><span>${ch.emoji} ${escapeHtml(ch.title)}</span><small class="muted">${seenCount}/${vids.length}</small></summary>
+        <div class="vgrid">${vids.map((v) => videoCard(v)).join("")}</div>
+      </details>`;
+    }).join("")}
+    <section class="card">
+      <h3>📺 Seriale – gdy masz ochotę na więcej</h3>
+      ${SERIES.map((s) => `
+        <div class="series"><b>${escapeHtml(s.name)}</b><p class="muted">${escapeHtml(s.note)}</p>
+        <div class="vgrid">${s.episodes.filter((e) => !st.hiddenVideos[e.id]).map((e) => videoCard(e)).join("")}</div></div>`).join("")}
+    </section>
+    <details class="card">
+      <summary>➕ Dodaj własny film z YouTube</summary>
+      <label>Link do filmu<input id="yt" placeholder="https://youtu.be/… lub /shorts/…"></label>
       <label>Tytuł (opcjonalnie)<input id="ytTitle" placeholder="np. Ordering coffee"></label>
-      <details><summary>Wklej transkrypcję/opis – AI ułoży pytania i wypisze zwroty</summary>
+      <label>Transkrypcja/opis – AI ułoży pytania i wypisze zwroty (opcjonalnie)
         <textarea id="ytText" rows="4" placeholder="YouTube: „…więcej” → „Pokaż transkrypcję” → skopiuj tekst"></textarea>
-      </details>
+      </label>
       <button class="btn btn-primary" id="addVid">Dodaj film</button>
-    </section>
-    ${st.videos.length ? `<section class="card"><h3>Twoje filmy</h3>${st.videos.map((v) => `
-      <a class="row link" href="#/video/${v.id}">
-        <img class="thumb" src="https://i.ytimg.com/vi/${v.ytId}/mqdefault.jpg" alt="">
-        <div><b>${escapeHtml(v.title)}</b><br><small class="muted">${v.watched ? "✅ obejrzany" : "nowy"}</small></div>
-      </a>`).join("")}</section>` : ""}
-    <section class="card">
-      <h3>Szukaj scenek do rozdziałów</h3>
+      ${st.videos.length ? `<h3>Twoje filmy</h3><div class="vgrid">${st.videos.map((v) => videoCard({ id: v.ytId, title: v.title })).join("")}</div>` : ""}
+    </details>
+    <details class="card">
+      <summary>🔎 Więcej darmowych źródeł</summary>
       <div class="chips">${TOPIC_SEARCHES.map((t) => `<a class="chip" target="_blank" rel="noopener" href="${youtubeSearchUrl(t.q)}">${t.label}</a>`).join("")}</div>
-    </section>
-    <section class="card">
-      <h3>Darmowe, sprawdzone źródła</h3>
       ${SOURCES.map((s) => `<div class="source"><a target="_blank" rel="noopener" href="${s.url}"><b>${escapeHtml(s.name)}</b> ↗</a><p class="muted">${escapeHtml(s.note)}</p></div>`).join("")}
-    </section>
+    </details>
   `);
 
   el.querySelector("#addVid").onclick = async () => {
@@ -330,7 +396,7 @@ function screenVideo() {
     if (!ytId) return toast("To nie wygląda na link do YouTube");
     const title = el.querySelector("#ytTitle").value.trim() || "Film " + (st.videos.length + 1);
     const text = el.querySelector("#ytText").value.trim();
-    const video = { id: Date.now().toString(36), ytId, title, questions: GENERIC_TASKS, phrases: [], watched: false };
+    const video = { id: Date.now().toString(36), ytId, title, questions: GENERIC_TASKS, phrases: [] };
     if (st.settings.apiKey) {
       toast("AI przygotowuje pytania…");
       try {
@@ -341,40 +407,129 @@ function screenVideo() {
         toast(describeError(e));
       }
     }
+    st.videos = st.videos.filter((v) => v.ytId !== ytId);
     st.videos.unshift(video);
     store.save();
-    location.hash = `#/video/${video.id}`;
+    location.hash = `#/watch/${ytId}`;
   };
 }
 
-function openVideo(id) {
+// Odtwarzacz: oficjalne YouTube IFrame API – dzięki niemu wiemy, gdy autor zablokował osadzanie
+let ytApiPromise = null;
+function loadYouTubeApi() {
+  if (window.YT?.Player) return Promise.resolve(window.YT);
+  if (!ytApiPromise) {
+    ytApiPromise = new Promise((resolve, reject) => {
+      const prev = window.onYouTubeIframeAPIReady;
+      window.onYouTubeIframeAPIReady = () => { prev?.(); resolve(window.YT); };
+      const s = document.createElement("script");
+      s.src = "https://www.youtube.com/iframe_api";
+      s.onerror = () => { ytApiPromise = null; reject(new Error("yt-api")); };
+      document.head.appendChild(s);
+      setTimeout(() => reject(new Error("yt-timeout")), 10000);
+    });
+  }
+  return ytApiPromise;
+}
+
+function mountPlayer(box, ytId, onBroken) {
+  const fallback = () => {
+    box.innerHTML = `<iframe src="${embedUrl(ytId)}" title="Wideo" allow="encrypted-media; picture-in-picture" allowfullscreen></iframe>`;
+  };
+  box.innerHTML = `<div id="ytp"></div>`;
+  loadYouTubeApi()
+    .then((YT) => {
+      new YT.Player("ytp", {
+        host: "https://www.youtube-nocookie.com",
+        videoId: ytId,
+        playerVars: { playsinline: 1, rel: 0, cc_load_policy: 1, cc_lang_pref: "en", hl: "pl" },
+        events: {
+          onError: (e) => {
+            // 100: film usunięty/prywatny, 101/150/153: autor nie pozwala osadzać
+            if ([100, 101, 150, 153].includes(e.data)) onBroken(e.data);
+          },
+        },
+      });
+    })
+    .catch(fallback);
+}
+
+function findVideo(ytId) {
   const st = store.getState();
-  const v = st.videos.find((x) => x.id === id);
+  const lib = LIBRARY.find((v) => v.id === ytId);
+  if (lib) return { ...lib, kind: "library" };
+  for (const s of SERIES) {
+    const e = s.episodes.find((x) => x.id === ytId);
+    if (e) return { ...e, src: s.name.includes("BBC") ? "bbc" : "voa", series: s.name, kind: "series" };
+  }
+  const own = st.videos.find((v) => v.ytId === ytId);
+  if (own) return { id: own.ytId, title: own.title, questions: own.questions, phrases: own.phrases, kind: "own" };
+  return null;
+}
+
+function openWatch(ytId) {
+  const st = store.getState();
+  const v = findVideo(ytId);
   if (!v) return (location.hash = "#/video");
+  const found = v.lesson ? findLesson(v.lesson) : null;
+  const phrases = found ? found.lesson.phrases : v.phrases || [];
+  const tasks = found ? CHAPTER_TASKS[found.chapter.id] : v.questions || GENERIC_TASKS;
+  const nextRec = () => recommendVideos(4).find((x) => x.id !== ytId);
+
   app.innerHTML = `
     <div class="session">
       <header class="session-top">
-        <a class="icon-btn" href="#/video">←</a>
+        <a class="icon-btn" href="#/video" aria-label="Wróć">←</a>
         <div class="chat-title">${escapeHtml(v.title)}</div>
-        <button class="icon-btn small" id="del" title="Usuń film">🗑</button>
+        ${v.kind === "own" ? `<button class="icon-btn small" id="del" title="Usuń film">🗑</button>` : `<a class="icon-btn small" href="${watchUrl(ytId)}" target="_blank" rel="noopener" title="Otwórz w YouTube">↗</a>`}
       </header>
       <main class="ex-body">
-        <div class="video-wrap"><iframe src="${embedUrl(v.ytId)}" title="${escapeHtml(v.title)}" allow="encrypted-media; picture-in-picture" allowfullscreen></iframe></div>
-        <p class="muted">Wskazówka: obejrzyj raz z napisami, drugi raz bez. Zatrzymuj i powtarzaj zdania na głos (shadowing).</p>
-        ${v.phrases.length ? `<h3>Zwroty z filmu</h3>${v.phrases.map((p) => `
-          <div class="row"><button class="speak-btn" data-say="${escapeHtml(p.en)}">🔊</button><div><b>${escapeHtml(p.en)}</b><br><span class="muted">${escapeHtml(p.pl)}</span></div></div>`).join("")}
-          <button class="btn btn-ghost" id="toSrs">➕ Dodaj zwroty do powtórek</button>` : ""}
-        <h3>Odpowiedz na głos</h3>
-        ${v.questions.map((q, i) => `
+        <div class="video-wrap ${v.short ? "short" : ""}"><div class="player"></div></div>
+        <div class="broken" hidden></div>
+        <p class="muted vmeta">${v.src ? escapeHtml(SRC_LABEL[v.src] || "") : ""}${found ? ` · ${found.chapter.emoji} lekcja <a href="#/lesson/${found.lesson.id}">${escapeHtml(found.lesson.title)}</a>` : ""}${v.series ? ` · ${escapeHtml(v.series)}` : ""}</p>
+        <div class="card steps">
+          <b>Jak oglądać</b>
+          <ol><li>Obejrzyj raz z napisami (CC).</li><li>Drugi raz bez napisów.</li><li>Zatrzymuj po zdaniu i powtarzaj na głos – to tzw. shadowing.</li></ol>
+        </div>
+        ${phrases.length ? `<h3>👂 Wyłap w filmie</h3><p class="muted">Zwroty z ${found ? "lekcji" : "filmu"}. Zaznacz te, które usłyszysz albo powiesz – każdy to +1 XP.</p>
+          ${phrases.map((p, i) => `
+          <div class="row"><button class="speak-btn" data-say="${escapeHtml(p.en)}">🔊</button>
+            <div><b>${escapeHtml(p.en)}</b><br><span class="muted">${escapeHtml(p.pl)}</span></div>
+            <button class="catch" data-i="${i}" title="Usłyszałem!">👂</button></div>`).join("")}
+          ${v.kind === "own" ? `<button class="btn btn-ghost" id="toSrs">➕ Dodaj zwroty do powtórek</button>` : ""}` : ""}
+        <h3>🎤 Odpowiedz na głos</h3>
+        ${tasks.map((q, i) => `
           <div class="card vq" data-i="${i}">
             <div><b>${escapeHtml(q.q)}</b> <button class="speak-btn" data-say="${escapeHtml(q.q)}">🔊</button></div>
             <small class="muted">${escapeHtml(q.hint_pl)}</small>
             <div class="vq-row"><button class="mic-btn small">🎤</button><div class="heard"></div></div>
           </div>`).join("")}
       </main>
-      <footer class="ex-foot"><button class="btn btn-primary" id="doneVid">Obejrzane ✔</button></footer>
+      <footer class="ex-foot"><button class="btn btn-primary" id="doneVid">${st.watched[ytId] ? "Obejrzane ✔ – następna scenka" : "Obejrzane ✔ (+10 XP)"}</button></footer>
     </div>`;
+
+  mountPlayer(app.querySelector(".player"), ytId, () => {
+    st.hiddenVideos[ytId] = Date.now();
+    store.save();
+    const next = nextRec();
+    const box = app.querySelector(".broken");
+    box.hidden = false;
+    box.innerHTML = `<p>😕 Autor tego filmu nie pozwala go odtwarzać poza YouTube (albo film zniknął). Ukryłem go z listy.</p>
+      <div class="btn-row"><a class="btn btn-ghost" href="${watchUrl(ytId)}" target="_blank" rel="noopener">Otwórz w YouTube ↗</a>
+      ${next ? `<a class="btn btn-primary" href="#/watch/${next.id}">Następna scenka ▶</a>` : ""}</div>`;
+  });
+
   app.querySelectorAll("[data-say]").forEach((b) => (b.onclick = () => speak(b.dataset.say, { lang: LANG })));
+  app.querySelectorAll(".catch").forEach((b) => {
+    b.onclick = () => {
+      if (b.classList.contains("on")) return;
+      b.classList.add("on");
+      b.textContent = "✅";
+      const p = phrases[+b.dataset.i];
+      store.srsAnswer(p, true, "phrase");
+      store.addXp(1);
+    };
+  });
   app.querySelectorAll(".vq").forEach((card) => {
     const mic = card.querySelector(".mic-btn");
     const out = card.querySelector(".heard");
@@ -392,18 +547,24 @@ function openVideo(id) {
     };
   });
   const toSrs = app.querySelector("#toSrs");
-  if (toSrs) toSrs.onclick = () => { v.phrases.forEach((p) => store.srsSeen(p, "phrase")); store.save(); toast("Dodano do powtórek"); };
-  app.querySelector("#del").onclick = () => {
+  if (toSrs) toSrs.onclick = () => { phrases.forEach((p) => store.srsSeen(p, "phrase")); store.save(); toast("Dodano do powtórek"); };
+  const del = app.querySelector("#del");
+  if (del) del.onclick = () => {
     if (!confirm("Usunąć ten film z listy?")) return;
-    st.videos = st.videos.filter((x) => x.id !== id);
+    st.videos = st.videos.filter((x) => x.ytId !== ytId);
     store.save();
     location.hash = "#/video";
   };
   app.querySelector("#doneVid").onclick = () => {
-    if (!v.watched) { v.watched = true; store.addStat("videos"); store.addXp(10); }
+    if (!st.watched[ytId]) {
+      st.watched[ytId] = Date.now();
+      store.addStat("videos");
+      store.addXp(10);
+    }
     store.save();
     flushToasts();
-    location.hash = "#/video";
+    const next = nextRec();
+    location.hash = next ? `#/watch/${next.id}` : "#/video";
   };
 }
 
