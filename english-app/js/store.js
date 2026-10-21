@@ -4,7 +4,7 @@ const KEY = "ea_state_v1";
 const DAY = 24 * 60 * 60 * 1000;
 
 const DEFAULT_STATE = {
-  profile: { name: "", dailyGoal: 30 },
+  profile: { name: "", dailyGoal: 30, level: null, placement: null }, // level: "A" | "B" | "C"
   xp: 0,
   xpByDay: {}, // "2026-10-21": 45
   streak: { count: 0, lastDay: null },

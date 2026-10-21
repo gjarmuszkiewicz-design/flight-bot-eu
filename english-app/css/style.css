@@ -109,6 +109,20 @@ label.check input { width: auto; margin: 0; }
 details summary { cursor: pointer; color: var(--blue); font-weight: 600; margin: 6px 0; }
 
 .welcome input { margin-bottom: 10px; }
+.level-tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 4px 0 16px; }
+.level-tab {
+  display: flex; flex-direction: column; align-items: center; gap: 2px; cursor: pointer;
+  font: inherit; font-weight: 700; font-size: 0.85rem; color: var(--text);
+  background: var(--card); border: 2px solid var(--line); border-bottom-width: 4px; border-radius: 14px; padding: 8px 4px;
+}
+.level-tab span { font-size: 1.3rem; }
+.level-tab small { font-weight: 500; color: var(--muted); font-size: 0.7rem; }
+.level-tab.active { border-color: var(--blue); background: #ddf4ff; color: #1899d6; }
+.level-pick { display: grid; gap: 8px; }
+.pbar { display: grid; grid-template-columns: 110px 1fr 40px; gap: 10px; align-items: center; margin: 6px 0; }
+.pbar .qbar { margin: 0; }
+.choice.dunno { color: var(--muted); border-style: dashed; }
+.small-count { font-size: 0.85rem; min-width: 40px; text-align: right; }
 .quick { display: grid; gap: 10px; margin-bottom: 20px; }
 
 /* ---------- Wyzwania ---------- */

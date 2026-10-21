@@ -30,12 +30,19 @@ export const SCENARIOS = [
   { id: "interview", emoji: "💼", title: "Rozmowa o pracę", role: "a friendly recruiter doing a short, simple job interview", opener: "Thanks for coming in. Can you tell me a little about yourself?" },
 ];
 
+const LEVEL_PROMPT = {
+  A: "level A2 – beginner. Use very simple words and short sentences",
+  B: "level B1–B2 – intermediate. Use natural everyday English, some common phrasal verbs",
+  C: "level C1 – advanced. Speak naturally like a native speaker: idioms, nuance, a faster pace of ideas",
+};
+
 function systemPrompt(scenario) {
-  return `You are ${scenario.role}. You are helping a Polish adult practise SPOKEN English (level A2–B1).
+  const level = LEVEL_PROMPT[getState().profile.level || "A"];
+  return `You are ${scenario.role}. You are helping a Polish adult practise SPOKEN English (${level}).
 Stay in character and keep the conversation going naturally.
 
 Rules:
-- Reply in simple, natural spoken English: 1–3 short sentences, everyday vocabulary.
+- Reply in natural spoken English matched to the learner's level: 1–3 sentences.
 - Almost always end with a question, so the learner has to speak again.
 - The learner's text comes from speech recognition: ignore missing punctuation and capital letters, and small recognition glitches.
 - If the learner made a real mistake (wrong word, word order, missing verb), put a short, kind correction in Polish in "correction_pl", quoting the better English version. If it was fine, use an empty string. Do not correct trivial things.

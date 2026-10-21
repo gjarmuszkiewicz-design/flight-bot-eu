@@ -137,6 +137,78 @@ export const LIBRARY = [
   { id: "XAURVf81vgQ", lesson: "smalltalk-3", type: "dialog", title: "Accept or Decline Invitations – Easy Conversation", desc: "Jak odmówić zaproszenia, żeby nikogo nie urazić.", src: "yt" },
   { id: "AecqTms6_-M", lesson: "smalltalk-3", type: "lesson", title: "Making, Accepting and Declining Invitations", desc: "Zwroty do zapraszania, przyjmowania i odmawiania.", src: "yt" },
   { id: "D_yasSFDjyw", lesson: "smalltalk-3", type: "dialog", title: "Weekend Plans Conversation in Simple English", desc: "Plany na weekend w minutę.", src: "yt", short: true },
+
+  // ===== Poziom średni (B1) =====
+  { id: "NPYWTkPj5bM", lesson: "b1-airport-1", type: "dialog", title: "Airport Check-in: Flight Is Cancelled", desc: "Przy odprawie okazuje się, że lot jest odwołany – co dalej.", src: "yt" },
+  { id: "1Hj0sXXTW_w", lesson: "b1-airport-1", type: "dialog", title: "What to Say When Your Flight Is Delayed", desc: "Jak spokojnie i pewnie rozmawiać, gdy lot się opóźnia.", src: "yt" },
+  { id: "FBwsBs2nkQk", lesson: "b1-airport-1", type: "lesson", title: "99 English Sentences for Travel Problems", desc: "Odwołany lot, zgubiona walizka, choroba za granicą – gotowe zdania.", src: "yt" },
+
+  { id: "GgWNytdjzP8", lesson: "b1-airport-2", type: "dialog", title: "English Conversation at the Airport – Passport Control", desc: "Rozmowa z funkcjonariuszem przy kontroli paszportowej.", src: "yt" },
+  { id: "gVolfItd4Mo", lesson: "b1-airport-2", type: "dialog", title: "English Conversation at Immigration", desc: "Odprawa imigracyjna: cel podróży, długość pobytu, nocleg.", src: "yt" },
+  { id: "b4CUB4X4HO4", lesson: "b1-airport-2", type: "dialog", title: "Passport Control & Border Interview", desc: "Pełna, realistyczna rozmowa na granicy.", src: "yt" },
+  { id: "OVl1HSM3BVU", lesson: "b1-airport-2", type: "dialog", title: "At the Airport: Passport Control and Customs", desc: "Kontrola paszportowa i celna – dwie rozmowy po kolei.", src: "yt" },
+
+  { id: "weoQEWXSDZo", lesson: "b1-hotel-1", type: "dialog", title: "Making a Hotel Reservation by Phone", desc: "Rezerwacja pokoju przez telefon krok po kroku.", src: "yt" },
+  { id: "6KpyzK6y8Oc", lesson: "b1-hotel-1", type: "dialog", title: "Making a Hotel Reservation in English", desc: "Gość i recepcja: rodzaj pokoju, cena, nazwisko do rezerwacji.", src: "yt" },
+  { id: "H2s79ftTD4k", lesson: "b1-hotel-1", type: "dialog", title: "Hotel Reservation Telephone Conversation", desc: "Rozmowa telefoniczna z hotelem.", src: "yt" },
+  { id: "gW-2gsHqGt0", lesson: "b1-hotel-1", type: "dialog", title: "Hotel Reservation in English", desc: "Rezerwacja przez telefon albo online – najprostsze kroki.", src: "yt" },
+
+  { id: "Ed6LzrUBe9M", lesson: "b1-food-1", type: "dialog", title: "Making a Restaurant Reservation", desc: "Rezerwacja stolika w restauracji.", src: "yt" },
+  { id: "PfSaePOl4mc", lesson: "b1-food-1", type: "dialog", title: "Make a Restaurant Reservation – Phone Conversation", desc: "Dzwonisz do restauracji, żeby zarezerwować stolik.", src: "yt" },
+  { id: "zI60alGD0XE", lesson: "b1-food-1", type: "dialog", title: "Speak English at the Restaurant: 4 Real-Life Conversations", desc: "Cztery rozmowy: od rezerwacji po zamówienie.", src: "yt" },
+  { id: "9GSYHmeFWXA", lesson: "b1-food-1", type: "dialog", title: "Do You Have Any Allergies?", desc: "Krótka rozmowa o alergiach pokarmowych.", src: "yt", short: true },
+
+  { id: "uB6h0AINl_s", lesson: "b1-shop-2", type: "lesson", title: "Useful English Expressions for Price Negotiation", desc: "Zwroty do targowania się o cenę.", src: "yt" },
+  { id: "-VcFoAYhDAM", lesson: "b1-shop-2", type: "dialog", title: "Bargaining in English: Ask for Better Prices", desc: "„Ile to kosztuje? Da pan taniej?” – targowanie w praktyce.", src: "yt" },
+  { id: "8ZmpqhhO4Dk", lesson: "b1-shop-2", type: "dialog", title: "Asking for Discounts", desc: "Jak uprzejmie poprosić o zniżkę.", src: "yt" },
+  { id: "YKAjbfPGx6Q", lesson: "b1-shop-2", type: "lesson", title: "How to Bargain Politely in English", desc: "Proste wskazówki, jak negocjować grzecznie i pewnie.", src: "yt" },
+
+  { id: "DLdJeOlDpRE", lesson: "b1-city-1", type: "dialog", title: "Renting a Car – Customer and Rental Agent Dialogue", desc: "Klient i pracownik wypożyczalni przy ladzie.", src: "yt" },
+  { id: "WzlniZ700V4", lesson: "b1-city-1", type: "dialog", title: "English Conversation: Renting a Car", desc: "Wynajem samochodu – rozmowa do odegrania.", src: "yt" },
+  { id: "br4OzOZPQug", lesson: "b1-city-1", type: "dialog", title: "Intermediate English Dialogue: Renting a Car (B1–B2)", desc: "Wynajem auta na poziomie średnim – zwroty i słowa kluczowe.", src: "yt" },
+  { id: "ux9iLl83zF4", lesson: "b1-city-1", type: "lesson", title: "English for Real Life: Renting a Car", desc: "Słownictwo przydatne w wypożyczalni.", src: "yt" },
+
+  // ===== Poziom zaawansowany (C1) =====
+  { id: "k-mKCM84SYY", lesson: "c1-basics-1", type: "lesson", title: "How to Make Small Talk at a Business Meeting", desc: "Small talk na spotkaniu biznesowym.", src: "yt" },
+  { id: "UTtFtVWQ9KQ", lesson: "c1-basics-1", type: "lesson", title: "Business English Small Talk", desc: "Typowe pytania i odpowiedzi w biznesowym small talku.", src: "yt" },
+  { id: "FuSqOJHgPC8", lesson: "c1-basics-1", type: "lesson", title: "How to Make Small Talk – Business English Lesson", desc: "Jak zaczynać i podtrzymywać rozmowę w pracy.", src: "yt" },
+  { id: "xrKToKZ-lWI", lesson: "c1-basics-1", type: "lesson", title: "Mastering Small Talk (Business English Podcast)", desc: "Podcast o sztuce small talku – do słuchania.", src: "yt" },
+
+  { id: "HakpWDCIXTw", lesson: "c1-basics-2", type: "lesson", title: "How to Disagree in English Politely", desc: "Jak powiedzieć „nie zgadzam się” bez napięcia w rozmowie.", src: "yt" },
+  { id: "CuV9qNigH-U", lesson: "c1-basics-2", type: "lesson", title: "Expressing Opinions, Agreeing & Disagreeing Politely (B2)", desc: "Wyrażanie opinii, zgoda i uprzejma niezgoda.", src: "yt" },
+  { id: "cDk-95Udb9Y", lesson: "c1-basics-2", type: "lesson", title: "27 Alternatives to “I think” (Advanced)", desc: "27 sposobów, żeby nie mówić ciągle „I think”.", src: "yt" },
+  { id: "59ZE3OiLdtU", lesson: "c1-basics-2", type: "lesson", title: "How to Speak Better in Business Meetings (Advanced)", desc: "Jak zabierać głos na spotkaniach, gdy stawka jest wysoka.", src: "yt" },
+
+  { id: "60Yf75IrWHk", lesson: "c1-basics-3", type: "lesson", title: "21 Advanced English Idioms", desc: "21 idiomów na poziomie zaawansowanym.", src: "yt" },
+  { id: "PS-lNmwBI50", lesson: "c1-basics-3", type: "lesson", title: "27 English Idioms for Fluent Conversation", desc: "Idiomy, dzięki którym brzmisz płynnie.", src: "yt" },
+  { id: "zn-05H-PlgA", lesson: "c1-basics-3", type: "lesson", title: "50 Advanced (C2) Expressions Native Speakers Use", desc: "50 wyrażeń, których używają native speakerzy.", src: "yt" },
+  { id: "6DbCTfepYgM", lesson: "c1-basics-3", type: "lesson", title: "221 Advanced English Phrases and Idioms", desc: "Długa lekcja: 221 zwrotów do codziennych rozmów.", src: "yt" },
+
+  { id: "qjQ_h4HWShU", lesson: "c1-airport-2", type: "dialog", title: "Immigration English — 35 Airport Questions & Answers", desc: "35 pytań, które może zadać urzędnik imigracyjny, i odpowiedzi.", src: "yt" },
+  { id: "5qVLppU4Th8", lesson: "c1-airport-2", type: "lesson", title: "How to Answer English Questions at Passport Control", desc: "Najczęstsze pytania na granicy z wyjaśnieniem.", src: "yt" },
+
+  { id: "OA1iXnZ0lNw", lesson: "c1-airport-3", type: "lesson", title: "6 Minute English – Travel and Tourism (Box Set)", desc: "BBC: kilka odcinków o podróżach i turystyce w jednym.", src: "bbc" },
+  { id: "UhR-Bn4UII0", lesson: "c1-airport-3", type: "lesson", title: "Is Tourism Harmful? – 6 Minute English", desc: "BBC: miasta jak Rzym i Brugia ograniczają ruch turystów.", src: "bbc" },
+  { id: "ZLl0BlZ6who", lesson: "c1-airport-3", type: "lesson", title: "Should Tourists Go to Antarctica? – 6 Minute English", desc: "BBC: czy turyści powinni jeździć na Antarktydę.", src: "bbc" },
+  { id: "EVXMiy4LCYE", lesson: "c1-airport-3", type: "lesson", title: "6 Minute English – Transport (Box Set)", desc: "BBC: pół godziny o transporcie i nowym słownictwie.", src: "bbc" },
+
+  { id: "6g-cQjYTgy0", lesson: "c1-food-1", type: "lesson", title: "Making Small Talk at the Restaurant – Business English", desc: "Small talk z klientem lub partnerem przy kolacji.", src: "yt" },
+  { id: "x3B11_WAmxM", lesson: "c1-food-1", type: "lesson", title: "Making Small Talk at the Restaurant – Part 2", desc: "Ciąg dalszy: rozmowa przy stole biznesowym.", src: "yt" },
+  { id: "jRZ57FfByR0", lesson: "c1-food-1", type: "lesson", title: "Business English: Talking About Food", desc: "Jak rozmawiać o menu i jedzeniu na biznesowym lunchu.", src: "yt" },
+
+  { id: "V9up8rWL3zQ", lesson: "c1-shop-1", type: "lesson", title: "How to Successfully Negotiate in English", desc: "Jak skutecznie negocjować: słuchać, mówić krótko i konkretnie.", src: "yt" },
+  { id: "-QVP1xuXurg", lesson: "c1-shop-1", type: "lesson", title: "20 Key Expressions for Negotiating in English", desc: "20 kluczowych zwrotów do negocjacji.", src: "yt" },
+  { id: "kO-xNOOoxsM", lesson: "c1-shop-1", type: "dialog", title: "Business English Conversation – Negotiation", desc: "Rozmowa biznesowa o cenie i warunkach.", src: "yt" },
+
+  { id: "fUcU39F73R0", lesson: "c1-shop-3", type: "dialog", title: "Apartment Rental Conversation", desc: "Najemca i właściciel – pełna rozmowa o wynajmie.", src: "yt" },
+  { id: "lPlpScj1QIo", lesson: "c1-shop-3", type: "dialog", title: "Renting an Apartment – Real English Conversation", desc: "Prawdziwa rozmowa o wynajmie mieszkania.", src: "yt" },
+  { id: "0DRPOQIOK6s", lesson: "c1-shop-3", type: "dialog", title: "English Conversation for Renting an Apartment", desc: "Czynsz, kaucja, opłaty – pytania do właściciela.", src: "yt" },
+  { id: "CVhX52dhDMo", lesson: "c1-shop-3", type: "lesson", title: "38 Phrases for Renting an Apartment", desc: "38 zwrotów do rozmowy z wynajmującym – shadowing.", src: "yt" },
+
+  { id: "GWkzCr3i0o0", lesson: "c1-smalltalk-3", type: "dialog", title: "Job Interview in English – Conversation Practice", desc: "Rozmowa kwalifikacyjna do przećwiczenia.", src: "yt" },
+  { id: "e3XlBiR7uaE", lesson: "c1-smalltalk-3", type: "dialog", title: "The Most Complete Job Interview in English", desc: "Realistyczna, pełna rozmowa o pracę.", src: "yt" },
+  { id: "-JNjsOX0N0c", lesson: "c1-smalltalk-3", type: "lesson", title: "English Job Interview Dos & Don'ts", desc: "Co mówić, a czego unikać: mocne i słabe strony, plany.", src: "yt" },
+  { id: "E_Bnirme2ec", lesson: "c1-smalltalk-3", type: "lesson", title: "1 Hour C1 Advanced English Listening – Job Interviews", desc: "Godzina słuchania na poziomie C1 o rozmowach o pracę.", src: "yt" },
 ];
 
 export const TYPE_LABEL = { dialog: "🎭 Scenka", lesson: "👩‍🏫 Lekcja z lektorem" };

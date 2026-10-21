@@ -1,6 +1,7 @@
 // Główny plik: nawigacja i ekrany (Nauka, Powtórki, Rozmowa AI, Wideo, Profil).
 
-import { COURSE, allLessons, findLesson } from "./course.js";
+import { COURSE, LEVELS, allLessons, findLesson, levelInfo, courseFor, levelOfLesson, chapterOf } from "./course.js";
+import { runPlacement } from "./placement.js";
 import * as store from "./store.js";
 import { buildLessonQueue, buildReviewQueue, runSession } from "./lesson.js";
 import { speak, listen, canListen, stopSpeaking, englishVoices, escapeHtml } from "./speech.js";
@@ -10,6 +11,9 @@ import { LIBRARY, SERIES, SRC_LABEL, TYPE_LABEL, CHAPTER_TASKS, thumbUrl, watchU
 
 const app = document.getElementById("app");
 const LANG = COURSE.lang;
+
+const currentLevel = () => store.getState().profile.level || "A";
+const currentCourse = () => courseFor(currentLevel());
 
 // ---------- Powiadomienia ----------
 
@@ -46,10 +50,12 @@ const TABS = [
 
 function route() {
   stopSpeaking();
-  const [tab, arg, extra] = (location.hash.slice(2) || "learn").split("/");
+  const [tab, arg, extra, mode] = (location.hash.slice(2) || "learn").split("/");
   if (tab === "lesson") return openLesson(arg);
+  if (tab === "placement") return openPlacement();
   if (tab === "talk" && arg) return openChat(arg);
-  if (tab === "watch" && arg) return openWatch(arg, extra === "lesson");
+  // #/watch/<film>/<lekcja>/pick – film oglądany jako zaliczenie lekcji
+  if (tab === "watch" && arg) return openWatch(arg, extra && extra !== "lesson" ? extra : null, mode === "pick" || extra === "lesson");
   if (tab === "pick" && arg) return openPick(arg);
   if (tab === "video" && arg) {
     // stare linki do własnych filmów
@@ -79,7 +85,7 @@ function shell(tab, html) {
 // ---------- Ekran: Nauka (ścieżka rozdziałów) ----------
 
 function isUnlocked(lessonId) {
-  const list = allLessons();
+  const list = allLessons(courseFor(levelOfLesson(lessonId)));
   const i = list.findIndex((l) => l.id === lessonId);
   return i === 0 || store.lessonProgress(list[i - 1].id).level >= 1;
 }
@@ -87,7 +93,7 @@ function isUnlocked(lessonId) {
 function screenLearn() {
   const quests = store.dailyQuests();
   const st = store.getState();
-  const nextLesson = allLessons().find((l) => store.lessonProgress(l.id).level === 0 && isUnlocked(l.id));
+  const nextLesson = allLessons(currentCourse()).find((l) => store.lessonProgress(l.id).level === 0 && isUnlocked(l.id));
   const due = store.dueItems(50).length;
   const recVideo = recommendVideos(1)[0];
 
@@ -96,8 +102,22 @@ function screenLearn() {
         <h2>Cześć! 👋</h2>
         <p>Uczymy się mówić, nie wkuwać gramatykę. Każda lekcja to prawdziwa sytuacja: lotnisko, hotel, sklep. Słówka i zdania wracają w kolejnych lekcjach, aż wejdą do głowy.</p>
         <label>Jak masz na imię?<input id="name" placeholder="np. Tomek"></label>
-        <button class="btn btn-primary" id="saveName">Zaczynamy</button>
+        <p class="muted">Na start szybki test (20 pytań, ~5 min) – dopasujemy poziom, żeby nie nudzić Cię podstawami.</p>
+        <div class="btn-row">
+          <button class="btn btn-primary" id="saveName" data-next="test">🧭 Test poziomu</button>
+          <button class="btn btn-ghost" id="saveNameZero" data-next="zero">Zaczynam od zera</button>
+        </div>
+      </div>` : !st.profile.level ? `<div class="card welcome">
+        <h3>🧭 Dopasuj poziom</h3>
+        <p class="muted">Kurs ma teraz 3 poziomy: początkujący, średni i zaawansowany – każdy ze wszystkimi tematami. Zrób szybki test, a ułożymy plan od właściwego miejsca.</p>
+        <div class="btn-row">
+          <a class="btn btn-primary" href="#/placement">Zrób test (5 min)</a>
+          <button class="btn btn-ghost" id="stayA">Zostaję przy początkującym</button>
+        </div>
       </div>` : ""}
+    <div class="level-tabs" role="tablist">
+      ${LEVELS.map((l) => `<button class="level-tab ${l.id === currentLevel() ? "active" : ""}" data-level="${l.id}"><span>${l.emoji}</span>${l.name}<small>${l.code}</small></button>`).join("")}
+    </div>
     <section class="card quests">
       <h3>Wyzwania dnia</h3>
       ${quests.map((q) => `
@@ -116,7 +136,7 @@ function screenLearn() {
       <p class="muted">Pasuje do tego, czego się teraz uczysz.</p>
       ${videoCard(recVideo, { big: true })}
     </section>` : ""}
-    ${COURSE.chapters.map((ch) => {
+    ${currentCourse().chapters.map((ch) => {
       const doneCount = ch.lessons.filter((l) => {
         const p = store.lessonProgress(l.id);
         return p.level >= 1 && (p.video || !videosForLesson(l.id).length);
@@ -148,14 +168,24 @@ function screenLearn() {
     }).join("")}
   `);
 
-  const saveName = el.querySelector("#saveName");
-  if (saveName) {
-    saveName.onclick = () => {
+  el.querySelectorAll("#saveName, #saveNameZero").forEach((b) => {
+    b.onclick = () => {
       st.profile.name = el.querySelector("#name").value.trim() || "Ja";
+      if (b.dataset.next === "zero") st.profile.level = "A";
+      store.save();
+      if (b.dataset.next === "test") location.hash = "#/placement";
+      else route();
+    };
+  });
+  const stayA = el.querySelector("#stayA");
+  if (stayA) stayA.onclick = () => { st.profile.level = "A"; store.save(); route(); };
+  el.querySelectorAll(".level-tab").forEach((b) => {
+    b.onclick = () => {
+      st.profile.level = b.dataset.level;
       store.save();
       route();
     };
-  }
+  });
 }
 
 function openLesson(id) {
@@ -171,6 +201,21 @@ function openLesson(id) {
       flushToasts();
       location.hash = result && videosForLesson(id).length ? `#/pick/${id}` : "#/learn";
     },
+  });
+}
+
+function openPlacement() {
+  const st = store.getState();
+  runPlacement(app, {
+    lang: LANG,
+    onDone: (r) => {
+      st.profile.level = r.level;
+      st.profile.placement = r;
+      store.save();
+      toast(`${levelInfo(r.level).emoji} Poziom ustawiony: ${levelInfo(r.level).name}`);
+      location.hash = "#/learn";
+    },
+    onCancel: () => (location.hash = "#/learn"),
   });
 }
 
@@ -325,33 +370,40 @@ function openChat(id) {
 // (żeby treść wróciła w nowym kontekście), na końcu tematy, które dopiero przed Tobą.
 function recommendVideos(n = 3) {
   const st = store.getState();
-  const lessons = allLessons();
+  const lessons = allLessons(currentCourse());
   let last = -1;
   lessons.forEach((l, i) => { if (store.lessonProgress(l.id).level >= 1) last = i; });
-  const score = (v) => {
-    const i = lessons.findIndex((l) => l.id === v.lesson);
-    if (i === last + 1) return -1;
-    if (i <= last) return last - i;
-    return 100 + i;
-  };
-  const pool = LIBRARY.filter((v) => !st.watched[v.id] && !st.hiddenVideos[v.id]).sort((a, b) => score(a) - score(b));
+  const score = (i) => (i === last + 1 ? -1 : i <= last ? last - i : 100 + i);
+  // kandydaci: filmy przypisane do lekcji bieżącego poziomu, z kontekstem lekcji
+  const pool = [];
+  lessons.forEach((l, i) => {
+    for (const v of videosForLesson(l.id)) if (!st.watched[v.id]) pool.push({ ...v, forLesson: l.id, rank: score(i) });
+  });
+  pool.sort((a, b) => a.rank - b.rank);
   // najwyżej jeden film z danej lekcji w polecanych, żeby była różnorodność
   const picked = [];
   const seen = new Set();
-  for (const v of pool) if (picked.length < n && !seen.has(v.lesson)) { picked.push(v); seen.add(v.lesson); }
-  for (const v of pool) if (picked.length < n && !picked.includes(v)) picked.push(v);
+  for (const v of pool) if (picked.length < n && !seen.has(v.forLesson) && !picked.some((p) => p.id === v.id)) { picked.push(v); seen.add(v.forLesson); }
+  for (const v of pool) if (picked.length < n && !picked.some((p) => p.id === v.id)) picked.push(v);
   return picked;
 }
 
-function videosForLesson(lessonId) {
+// Scenki do lekcji: lekcja może wskazać kilka grup filmów (pole "videos"), np. poziom
+// zaawansowany korzysta też z filmów z poziomu średniego. Nieobejrzane na początku, maks. 4.
+function videosForLesson(lessonId, limit = 4) {
   const st = store.getState();
-  return LIBRARY.filter((v) => v.lesson === lessonId && !st.hiddenVideos[v.id]);
+  const found = findLesson(lessonId);
+  const keys = found?.lesson.videos || [lessonId];
+  const list = keys.flatMap((k) => LIBRARY.filter((v) => v.lesson === k && !st.hiddenVideos[v.id]));
+  const unique = [...new Map(list.map((v) => [v.id, v])).values()];
+  return [...unique.filter((v) => !st.watched[v.id]), ...unique.filter((v) => st.watched[v.id])].slice(0, limit);
 }
 
 function videoCard(v, { big = false } = {}) {
   const st = store.getState();
-  const found = v.lesson ? findLesson(v.lesson) : null;
-  return `<a class="vcard ${big ? "big" : ""}" href="#/watch/${v.id}">
+  const ctx = v.forLesson || v.lesson;
+  const found = ctx ? findLesson(ctx) : null;
+  return `<a class="vcard ${big ? "big" : ""}" href="#/watch/${v.id}${v.forLesson ? `/${v.forLesson}` : ""}">
     <span class="vthumb"><img src="${thumbUrl(v.id)}" alt="" loading="lazy" onerror="this.style.visibility='hidden'">${v.short ? '<i class="vbadge">Short</i>' : ""}${st.watched[v.id] ? '<i class="vdone">✅</i>' : ""}</span>
     <span class="vtitle">${escapeHtml(v.desc || v.title)}</span>
     ${found ? `<small class="muted">${found.chapter.emoji} ${escapeHtml(found.lesson.title)}</small>` : ""}
@@ -368,7 +420,7 @@ function screenVideo() {
       ${recs.length ? `<h3>Polecane dla Ciebie</h3><div class="vgrid">${recs.map((v) => videoCard(v, { big: true })).join("")}</div>` : `<p>Obejrzałeś wszystkie scenki z biblioteki 🎉 Dodaj własne poniżej.</p>`}
     </section>
     ${COURSE.chapters.map((ch) => {
-      const vids = LIBRARY.filter((v) => v.lesson.startsWith(ch.id + "-") && !st.hiddenVideos[v.id]);
+      const vids = LIBRARY.filter((v) => chapterOf(v.lesson) === ch.id && !st.hiddenVideos[v.id]);
       if (!vids.length) return "";
       const seenCount = vids.filter((v) => st.watched[v.id]).length;
       return `<details class="card vchapter">
@@ -495,7 +547,7 @@ function openPick(lessonId) {
         <p class="muted">${found.chapter.emoji} <b>${escapeHtml(found.lesson.title)}</b> – zobacz, jak te zwroty brzmią w prawdziwej rozmowie. Wybierz jeden film i obejrzyj go${p.video ? "" : ", żeby zaliczyć lekcję"}.</p>
         <div class="pick-list">
           ${vids.map((v) => `
-            <a class="pick" href="#/watch/${v.id}/lesson">
+            <a class="pick" href="#/watch/${v.id}/${lessonId}/pick">
               <span class="vthumb"><img src="${thumbUrl(v.id)}" alt="" loading="lazy" onerror="this.style.visibility='hidden'">
                 ${v.short ? '<i class="vbadge">Short</i>' : ""}${st.watched[v.id] ? '<i class="vdone">✅</i>' : ""}</span>
               <span class="pick-text">
@@ -510,11 +562,14 @@ function openPick(lessonId) {
     </div>`;
 }
 
-function openWatch(ytId, fromLesson = false) {
+function openWatch(ytId, ctxLessonId = null, fromPick = false) {
   const st = store.getState();
   const v = findVideo(ytId);
   if (!v) return (location.hash = "#/video");
-  const found = v.lesson ? findLesson(v.lesson) : null;
+  // lekcja, w kontekście której oglądamy (z ekranu wyboru albo z polecanych)
+  const lessonId = ctxLessonId || v.lesson || null;
+  const found = lessonId ? findLesson(lessonId) : null;
+  const fromLesson = fromPick;
   const phrases = found ? found.lesson.phrases : v.phrases || [];
   const tasks = found ? CHAPTER_TASKS[found.chapter.id] : v.questions || GENERIC_TASKS;
   const nextRec = () => recommendVideos(4).find((x) => x.id !== ytId);
@@ -522,7 +577,7 @@ function openWatch(ytId, fromLesson = false) {
   app.innerHTML = `
     <div class="session">
       <header class="session-top">
-        <a class="icon-btn" href="${fromLesson && v.lesson ? `#/pick/${v.lesson}` : "#/video"}" aria-label="Wróć">←</a>
+        <a class="icon-btn" href="${fromLesson && lessonId ? `#/pick/${lessonId}` : "#/video"}" aria-label="Wróć">←</a>
         <div class="chat-title">${escapeHtml(v.title)}</div>
         ${v.kind === "own" ? `<button class="icon-btn small" id="del" title="Usuń film">🗑</button>` : `<a class="icon-btn small" href="${watchUrl(ytId)}" target="_blank" rel="noopener" title="Otwórz w YouTube">↗</a>`}
       </header>
@@ -530,7 +585,7 @@ function openWatch(ytId, fromLesson = false) {
         <div class="video-wrap ${v.short ? "short" : ""}"><div class="player"></div></div>
         <div class="broken" hidden></div>
         ${v.desc ? `<p class="vdesc">${escapeHtml(v.desc)}</p>` : ""}
-        <p class="muted vmeta">${v.src ? escapeHtml(SRC_LABEL[v.src] || "") : ""}${found ? ` · ${found.chapter.emoji} lekcja <a href="#/lesson/${found.lesson.id}">${escapeHtml(found.lesson.title)}</a>` : ""}${v.series ? ` · ${escapeHtml(v.series)}` : ""}</p>
+        <p class="muted vmeta">${v.src ? escapeHtml(SRC_LABEL[v.src] || "") : ""}${found ? ` · ${found.chapter.emoji} ${found.level.name} · lekcja <a href="#/lesson/${found.lesson.id}">${escapeHtml(found.lesson.title)}</a>` : ""}${v.series ? ` · ${escapeHtml(v.series)}` : ""}</p>
         <div class="card steps">
           <b>Jak oglądać</b>
           <ol><li>Obejrzyj raz z napisami (CC).</li><li>Drugi raz bez napisów.</li><li>Zatrzymuj po zdaniu i powtarzaj na głos – to tzw. shadowing.</li></ol>
@@ -550,7 +605,7 @@ function openWatch(ytId, fromLesson = false) {
           </div>`).join("")}
       </main>
       <footer class="ex-foot"><button class="btn btn-primary" id="doneVid">${
-        fromLesson && v.lesson && !store.lessonProgress(v.lesson).video ? "Obejrzane ✔ – zalicz lekcję (+15 XP)"
+        fromLesson && lessonId && !store.lessonProgress(lessonId).video ? "Obejrzane ✔ – zalicz lekcję (+15 XP)"
         : st.watched[ytId] ? "Obejrzane ✔ – następna scenka" : "Obejrzane ✔ (+10 XP)"}</button></footer>
     </div>`;
 
@@ -562,8 +617,8 @@ function openWatch(ytId, fromLesson = false) {
     box.hidden = false;
     box.innerHTML = `<p>😕 Autor tego filmu nie pozwala go odtwarzać poza YouTube (albo film zniknął). Ukryłem go z listy.</p>
       <div class="btn-row"><a class="btn btn-ghost" href="${watchUrl(ytId)}" target="_blank" rel="noopener">Otwórz w YouTube ↗</a>
-      ${fromLesson && v.lesson ? `<a class="btn btn-primary" href="#/pick/${v.lesson}">Wybierz inną scenkę ▶</a>`
-        : next ? `<a class="btn btn-primary" href="#/watch/${next.id}">Następna scenka ▶</a>` : ""}</div>`;
+      ${fromLesson && lessonId ? `<a class="btn btn-primary" href="#/pick/${lessonId}">Wybierz inną scenkę ▶</a>`
+        : next ? `<a class="btn btn-primary" href="#/watch/${next.id}${next.forLesson ? `/${next.forLesson}` : ""}">Następna scenka ▶</a>` : ""}</div>`;
   });
 
   app.querySelectorAll("[data-say]").forEach((b) => (b.onclick = () => speak(b.dataset.say, { lang: LANG })));
@@ -609,16 +664,16 @@ function openWatch(ytId, fromLesson = false) {
       store.addXp(10);
     }
     // obejrzenie dowolnej scenki z lekcji zalicza tę lekcję
-    const passed = v.lesson && store.lessonProgress(v.lesson).level >= 1 && store.completeLessonVideo(v.lesson, ytId);
+    const passed = lessonId && store.lessonProgress(lessonId).level >= 1 && store.completeLessonVideo(lessonId, ytId);
     if (passed) {
       store.addXp(5);
-      toast(`🎓 Lekcja „${findLesson(v.lesson).lesson.title}” zaliczona!`);
+      toast(`🎓 Lekcja „${found.lesson.title}” zaliczona!`);
     }
     store.save();
     flushToasts();
     if (fromLesson) return (location.hash = "#/learn");
     const next = nextRec();
-    location.hash = next ? `#/watch/${next.id}` : "#/video";
+    location.hash = next ? `#/watch/${next.id}${next.forLesson ? `/${next.forLesson}` : ""}` : "#/video";
   };
 }
 
@@ -644,6 +699,11 @@ function screenMe() {
       <div class="week">${week.map((d) => `
         <div class="day"><div class="bar ${d.xp >= st.profile.dailyGoal ? "goal" : ""}" style="height:${Math.round((d.xp / max) * 100)}%"></div>
         <small>${days[new Date(d.day).getDay()]}</small><small class="muted">${d.xp}</small></div>`).join("")}</div>
+    </section>
+    <section class="card">
+      <h3>🧭 Poziom</h3>
+      <p>Uczysz się na poziomie: <b>${levelInfo(currentLevel()).emoji} ${levelInfo(currentLevel()).name}</b> (${levelInfo(currentLevel()).code})${st.profile.placement ? `<br><small class="muted">Test z ${new Date(st.profile.placement.date).toLocaleDateString("pl-PL")}: podstawy ${st.profile.placement.score.A}/7, średni ${st.profile.placement.score.B}/7, zaawansowany ${st.profile.placement.score.C}/6</small>` : ""}</p>
+      <a class="btn btn-ghost" href="#/placement">Zrób test ponownie</a>
     </section>
     <section class="card">
       <h3>Odznaki</h3>

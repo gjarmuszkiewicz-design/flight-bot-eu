@@ -1,7 +1,7 @@
 // Silnik lekcji: układa kolejkę ćwiczeń (nowe treści + powtórki z wcześniejszych lekcji),
 // renderuje je i zbiera wynik. Błędne ćwiczenia wracają na koniec kolejki – jak w Duolingo.
 
-import { COURSE, allLessons } from "./course.js";
+import { COURSE, allLessons, courseFor, levelOfLesson } from "./course.js";
 import { speak, listen, canListen, scoreSpeech, highlightAnswer, escapeHtml } from "./speech.js";
 import * as store from "./store.js";
 
@@ -14,8 +14,10 @@ const speakingOn = () => Date.now() > speakingPausedUntil;
 
 // ---------- Budowanie kolejki ----------
 
+// Pula do błędnych odpowiedzi w ćwiczeniach wyboru – z tego samego poziomu, żeby nie było za łatwo
+let poolLevel = "A";
 function pools() {
-  const lessons = allLessons();
+  const lessons = allLessons(courseFor(poolLevel));
   return {
     words: lessons.flatMap((l) => l.words),
     phrases: lessons.flatMap((l) => l.phrases),
@@ -23,6 +25,7 @@ function pools() {
 }
 
 export function buildLessonQueue(lesson, level) {
+  poolLevel = levelOfLesson(lesson.id);
   const q = [];
   const words = lesson.words;
   const phrases = lesson.phrases;

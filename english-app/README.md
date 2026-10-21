@@ -6,14 +6,15 @@ Aplikacja na telefon do nauki **mówienia** po angielsku. Mechanika podobna do D
 
 | Funkcja | Opis |
 |---|---|
-| 📚 **Kurs** | 8 rozdziałów × 3 lekcje = 24 lekcje, ~150 słówek i ~120 zwrotów z życia (z odrobiną humoru w scenkach) |
+| 🧭 **Test poziomu** | na start 20 pytań (~5 min): uzupełnianie zdań, znaczenie, słuchanie, wybór najlepszej odpowiedzi – od A1 do C1, z opcją „Nie wiem”. Wynik ustawia poziom, ale zawsze możesz go zmienić (zakładki nad ścieżką lub *Profil → Poziom*) |
+| 📚 **Kurs – 3 poziomy** | **Początkujący** (A1–A2), **Średni** (B1–B2), **Zaawansowany** (C1). Każdy poziom ma te same **8 tematów × 3 lekcje** – podróże są i dla początkujących (odprawa), i dla średnich (odwołany lot, kontrola paszportowa), i dla zaawansowanych (negocjacje z linią, trudne pytania na granicy). Razem 72 lekcje, ~350 słówek i ~360 zwrotów |
 | 🧩 **Ćwiczenia** | nowe słówko z wymową, wybór tłumaczenia, „co słyszysz?”, układanie zdania z kafelków, dyktando, **powiedz na głos**, **powiedz to po angielsku** (z polskiego), **scenka**, w której odgrywasz swoją rolę |
 | 🎤 **Mówienie** | rozpoznawanie mowy w przeglądarce – aplikacja pokazuje, co usłyszała, ile % się zgadza i które słowa wyszły źle. Przycisk 🐢 czyta wolniej. Przycisk 🎙️/🔇 wyłącza mówienie na 15 min (np. w autobusie) |
 | 👑 **Poziomy lekcji** | każdą lekcję przechodzisz 3 razy: najpierw rozpoznajesz, potem powtarzasz na głos, na końcu mówisz z pamięci z polskiego |
 | 🔁 **Powtórki** | system Leitnera: zwrot wraca po 1, 2, 4, 8, 16 dniach; błąd = wraca od początku. Zaległe zwroty **wplatają się w nowe lekcje**, więc słówka z lotniska wrócą w lekcji o hotelu |
 | 🎯 **Motywacja** | XP, cel dzienny, seria dni 🔥, 3 wyzwania dnia, 13 odznak, wykres tygodnia |
 | 🤖 **Rozmowa z AI** | 8 scenek (barista, odprawa, hotel, lekarz, rozmowa o pracę…). Mówisz do mikrofonu → AI odpowiada głosem → mikrofon sam się włącza (tryb na żywo). Pod Twoją wypowiedzią pojawia się 💡 podpowiedź po polsku, jak powiedzieć lepiej |
-| 🎬 **Wideo** | **każda lekcja kończy się scenką**: po ćwiczeniach wybierasz 1 z 4 filmów (miniatura + opis po polsku, np. „Nie działa klimatyzacja – dokładnie jak w Twojej lekcji”), oglądasz i lekcja jest **zaliczona 🎓**. Razem 96 scenek (4 × 24 lekcje) + seriale VOA i BBC. Przy filmie: zwroty z lekcji do wyłapania 👂 i pytania do odpowiedzi na głos. Scenki są też polecane na ekranie głównym i w zakładce 🎬. Można dodać własny link (także Shorts) |
+| 🎬 **Wideo** | **każda lekcja kończy się scenką**: po ćwiczeniach wybierasz 1 z 4 filmów (miniatura + opis po polsku, np. „Nie działa klimatyzacja – dokładnie jak w Twojej lekcji”), oglądasz i lekcja jest **zaliczona 🎓**. Razem 151 scenek – każda z 72 lekcji ma 3–4 do wyboru + seriale VOA i BBC. Przy filmie: zwroty z lekcji do wyłapania 👂 i pytania do odpowiedzi na głos. Scenki są też polecane na ekranie głównym i w zakładce 🎬. Można dodać własny link (także Shorts) |
 | 📱 **Telefon** | PWA – instalujesz z przeglądarki jak zwykłą aplikację, działa offline (poza AI i wideo), tryb ciemny |
 | 💾 **Kopia** | eksport/import postępu do pliku |
 
@@ -103,7 +104,9 @@ english-app/
 ├── icons/
 └── js/
     ├── app.js     # nawigacja i ekrany
-    ├── course.js  # TREŚĆ KURSU – tu dopisujesz rozdziały i lekcje
+    ├── course.js  # TREŚĆ KURSU: poziom początkujący + lista poziomów
+    ├── course-levels.js # poziom średni i zaawansowany
+    ├── placement.js     # test poziomujący (pytania i ocena)
     ├── lesson.js  # silnik lekcji i rodzaje ćwiczeń
     ├── speech.js  # czytanie i rozpoznawanie mowy, ocena wypowiedzi
     ├── store.js   # postęp, XP, seria, odznaki, wyzwania, powtórki
@@ -127,5 +130,7 @@ W `js/course.js` dodaj obiekt do `lessons` w wybranym rozdziale:
   ],
 }
 ```
+
+Lekcje poziomu średniego i zaawansowanego mają id z przedrostkiem `b1-` / `c1-` i mogą wskazać, z których grup filmów brać scenki: `videos: ["b1-airport-1", "airport-2"]`.
 
 `alt` to inne poprawne wersje zdania (akceptowane przy mówieniu i układaniu). Ćwiczenia generują się z tych danych automatycznie.

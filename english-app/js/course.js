@@ -1,9 +1,12 @@
 // Treść kursu. Każdy rozdział = sytuacja z życia, każda lekcja = słówka + zwroty + scenka.
+// To jest poziom początkujący; średni i zaawansowany są w course-levels.js.
 // Ten sam format posłuży później dla hiszpańskiego (osobny plik course-es.js z lang: "es-ES").
 //
 // words:   pojedyncze słówka (en, pl)
 // phrases: gotowe schematy zdań – to na nich opiera się mówienie (alt = inne poprawne wersje)
 // dialog:  krótka scenka; "you" to kwestie, które wypowiadasz Ty
+
+import { COURSE_B1, COURSE_C1 } from "./course-levels.js";
 
 export const COURSE = {
   id: "en",
@@ -699,15 +702,46 @@ export const COURSE = {
   ],
 };
 
+// ---------- Poziomy ----------
+// Każdy poziom ma te same tematy (rozdziały), ale inne sytuacje i trudniejszy język.
+
+export const LEVELS = [
+  { id: "A", code: "A1–A2", name: "Początkujący", emoji: "🌱", course: COURSE },
+  { id: "B", code: "B1–B2", name: "Średni", emoji: "🌿", course: COURSE_B1 },
+  { id: "C", code: "C1", name: "Zaawansowany", emoji: "🌳", course: COURSE_C1 },
+];
+
+export function levelInfo(levelId) {
+  return LEVELS.find((l) => l.id === levelId) || LEVELS[0];
+}
+
+export function courseFor(levelId) {
+  return levelInfo(levelId).course;
+}
+
+export function levelOfLesson(lessonId) {
+  if (lessonId.startsWith("b1-")) return "B";
+  if (lessonId.startsWith("c1-")) return "C";
+  return "A";
+}
+
+// id rozdziału (tematu) niezależnie od poziomu, np. "c1-airport-2" → "airport"
+export function chapterOf(lessonId) {
+  return lessonId.replace(/^(b1|c1)-/, "").split("-")[0];
+}
+
 // Pomocnicze: płaska lista lekcji w kolejności kursu
 export function allLessons(course = COURSE) {
   return course.chapters.flatMap((ch) => ch.lessons.map((l) => ({ ...l, chapterId: ch.id })));
 }
 
-export function findLesson(id, course = COURSE) {
-  for (const ch of course.chapters) {
-    const lesson = ch.lessons.find((l) => l.id === id);
-    if (lesson) return { chapter: ch, lesson };
+// Szuka lekcji na wszystkich poziomach
+export function findLesson(id) {
+  for (const lvl of LEVELS) {
+    for (const ch of lvl.course.chapters) {
+      const lesson = ch.lessons.find((l) => l.id === id);
+      if (lesson) return { chapter: ch, lesson, level: lvl };
+    }
   }
   return null;
 }
