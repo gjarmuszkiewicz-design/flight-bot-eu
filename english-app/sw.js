@@ -1,5 +1,5 @@
 // Service worker: aplikacja działa offline (poza rozmową z AI i wideo).
-const CACHE = "speakup-v2";
+const CACHE = "speakup-v3";
 const FILES = [
   "./", "index.html", "manifest.webmanifest", "css/style.css",
   "js/app.js", "js/course.js", "js/store.js", "js/lesson.js", "js/speech.js", "js/ai.js", "js/videos.js", "js/library.js",

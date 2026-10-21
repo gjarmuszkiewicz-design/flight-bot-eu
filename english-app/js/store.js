@@ -126,8 +126,17 @@ export function lessonProgress(id) {
 
 export function completeLesson(id, accuracy) {
   const p = lessonProgress(id);
-  state.lessons[id] = { level: Math.min(3, p.level + 1), best: Math.max(p.best, accuracy) };
+  state.lessons[id] = { ...p, level: Math.min(3, p.level + 1), best: Math.max(p.best, accuracy) };
   save();
+}
+
+// Zaliczenie scenki wideo do lekcji. Zwraca true, gdy lekcja właśnie została zaliczona.
+export function completeLessonVideo(id, ytId) {
+  const p = lessonProgress(id);
+  if (p.video) return false;
+  state.lessons[id] = { ...p, video: ytId };
+  save();
+  return true;
 }
 
 // ---------- Powtórki: system Leitnera ----------
@@ -238,6 +247,7 @@ export const BADGES = [
   { id: "words-100", icon: "📚", name: "Setka", desc: "Opanuj 100 słów i zwrotów", test: () => knownCount() >= 100 },
   { id: "chat-1", icon: "🤖", name: "Pierwsza rozmowa", desc: "Porozmawiaj z AI", test: (s) => s.stats.chats >= 1 },
   { id: "video-5", icon: "🎬", name: "Kinoman", desc: "Obejrzyj 5 scenek wideo", test: (s) => s.stats.videos >= 5 },
+  { id: "graduate-3", icon: "🎓", name: "Absolwent", desc: "Zalicz 3 lekcje razem ze scenką", test: (s) => Object.values(s.lessons).filter((l) => l.video).length >= 3 },
   { id: "xp-1000", icon: "⭐", name: "Tysiąc", desc: "Zdobądź 1000 XP", test: (s) => s.xp >= 1000 },
 ];
 

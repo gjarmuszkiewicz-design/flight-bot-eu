@@ -71,7 +71,7 @@ function reviewExercise(rec) {
 
 // ---------- Sesja ----------
 
-export function runSession(root, { title, queue, lessonId, onExit, finishVideo }) {
+export function runSession(root, { title, queue, lessonId, onExit }) {
   const total = queue.filter((e) => e.type !== "intro").length || 1;
   let done = 0;
   let firstTry = 0;
@@ -180,9 +180,7 @@ export function runSession(root, { title, queue, lessonId, onExit, finishVideo }
         <p class="muted">${mistakes ? "Zwroty, z którymi był kłopot, wrócą w powtórkach." : "Bez błędów – tak trzymaj!"}</p>
       </div>`;
     foot.className = "ex-foot";
-    const video = finishVideo?.();
-    foot.innerHTML = `${video ? `<a class="btn btn-ghost" href="${video.href}">${escapeHtml(video.label)}</a>` : ""}
-      <button class="btn btn-primary" data-act="done">Kontynuuj</button>`;
+    foot.innerHTML = `<button class="btn btn-primary" data-act="done">Kontynuuj</button>`;
     foot.querySelector('[data-act="done"]').onclick = () => onExit({ xp: totalXp, accuracy });
   }
 
@@ -229,8 +227,9 @@ function choiceExercise({ body, result }, { prompt, promptHtml, options, correct
 }
 
 // Mikrofon: nagrywa, ocenia i pokazuje, które słowa wyszły
-function speakingWidget(container, answers, onDone, { maxTries = 3 } = {}) {
+function speakingWidget(container, answers, onDoneRaw, { maxTries = 3 } = {}) {
   let tries = 0;
+  let finished = false;
   container.insertAdjacentHTML(
     "beforeend",
     `<div class="mic-wrap">
@@ -246,6 +245,14 @@ function speakingWidget(container, answers, onDone, { maxTries = 3 } = {}) {
   const mic = container.querySelector(".mic-btn");
   const heard = container.querySelector(".heard");
   const hint = container.querySelector(".mic-hint");
+  // wynik zapisujemy tylko raz – kolejne kliknięcia nic już nie zmieniają
+  const onDone = (ok, info) => {
+    if (finished) return;
+    finished = true;
+    mic.disabled = true;
+    container.querySelector(".self-check").hidden = true;
+    onDoneRaw(ok, info);
+  };
   container.querySelectorAll("[data-self]").forEach((b) => {
     b.onclick = () => {
       if (b.dataset.self === "1") store.addStat("spoken");
@@ -254,6 +261,7 @@ function speakingWidget(container, answers, onDone, { maxTries = 3 } = {}) {
   });
 
   mic.onclick = async () => {
+    if (finished) return;
     if (!canListen) return speak(answers[0], { lang: LANG });
     mic.classList.add("live");
     hint.textContent = "Słucham…";
@@ -306,6 +314,7 @@ const RENDER = {
       body.insertAdjacentHTML("beforeend", `<p class="ex-label">Powtórz na głos:</p>`);
       speakingWidget(body, [item.en, ...(item.alt || [])], (ok) => {
         body.querySelector(".mic-hint").textContent = ok ? "Super! 👏" : "Ok, poćwiczymy jeszcze.";
+        body.querySelector(".self-check").hidden = true;
       });
     }
     foot.innerHTML = `<button class="btn btn-primary" data-act="next">Dalej</button>`;

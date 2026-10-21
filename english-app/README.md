@@ -13,7 +13,7 @@ Aplikacja na telefon do nauki **mówienia** po angielsku. Mechanika podobna do D
 | 🔁 **Powtórki** | system Leitnera: zwrot wraca po 1, 2, 4, 8, 16 dniach; błąd = wraca od początku. Zaległe zwroty **wplatają się w nowe lekcje**, więc słówka z lotniska wrócą w lekcji o hotelu |
 | 🎯 **Motywacja** | XP, cel dzienny, seria dni 🔥, 3 wyzwania dnia, 13 odznak, wykres tygodnia |
 | 🤖 **Rozmowa z AI** | 8 scenek (barista, odprawa, hotel, lekarz, rozmowa o pracę…). Mówisz do mikrofonu → AI odpowiada głosem → mikrofon sam się włącza (tryb na żywo). Pod Twoją wypowiedzią pojawia się 💡 podpowiedź po polsku, jak powiedzieć lepiej |
-| 🎬 **Wideo** | wbudowana biblioteka **~60 scenek** przypisanych do konkretnych lekcji + seriale (VOA *Let's Learn English*, BBC *English at Work*). Aplikacja **sama podsuwa** scenki: na ekranie głównym („Scenka dla Ciebie”), po każdej lekcji („Zobacz to w prawdziwej scence”) i w zakładce 🎬 („Polecane dla Ciebie”). Przy filmie: zwroty z lekcji do wyłapania 👂 i pytania do odpowiedzi na głos. Można też dodać własny link (także Shorts) |
+| 🎬 **Wideo** | **każda lekcja kończy się scenką**: po ćwiczeniach wybierasz 1 z 4 filmów (miniatura + opis po polsku, np. „Nie działa klimatyzacja – dokładnie jak w Twojej lekcji”), oglądasz i lekcja jest **zaliczona 🎓**. Razem 96 scenek (4 × 24 lekcje) + seriale VOA i BBC. Przy filmie: zwroty z lekcji do wyłapania 👂 i pytania do odpowiedzi na głos. Scenki są też polecane na ekranie głównym i w zakładce 🎬. Można dodać własny link (także Shorts) |
 | 📱 **Telefon** | PWA – instalujesz z przeglądarki jak zwykłą aplikację, działa offline (poza AI i wideo), tryb ciemny |
 | 💾 **Kopia** | eksport/import postępu do pliku |
 
@@ -65,9 +65,10 @@ Modele do wyboru w ustawieniach: **Claude Opus 5.5** (domyślnie, najlepsze rozm
 
 - Lista filmów jest w `js/library.js`: każdy film ma ID z YouTube, tytuł i lekcję, do której pasuje. Filmy znalazłem przez wyszukiwarkę (lekcje dialogowe z kanałów edukacyjnych, VOA i BBC).
 - Film jest tylko **podglądem w oficjalnym odtwarzaczu YouTube** (tryb bez ciasteczek `youtube-nocookie.com`). Nic nie jest pobierane ani zapisywane – to tak, jakbyś oglądał go na YouTube, tylko wewnątrz aplikacji.
+- **Zaliczenie lekcji:** po ćwiczeniach pojawia się ekran „Ostatni krok: wybierz scenkę” z 4 filmami do tematu lekcji. Obejrzenie jednego zalicza lekcję (🎓 na ścieżce, +15 XP). Można pominąć i wrócić później – przy lekcji zostaje żółta plakietka „🎬 Brakuje scenki”. Kolejne lekcje odblokowują się po ćwiczeniach, więc niedziałający film nigdy nie zablokuje nauki.
 - **Podpowiadanie:** najpierw scenki do lekcji, którą właśnie przerabiasz, potem do niedawno ukończonych (powtórka w nowym kontekście), na końcu tematy, które są przed Tobą. Obejrzane nie wracają do polecanych.
 - **Samonaprawianie:** część autorów blokuje odtwarzanie poza YouTube albo usuwa filmy. Aplikacja to wykrywa (przez YouTube IFrame API), ukrywa taki film, proponuje link „Otwórz w YouTube” i następną scenkę.
-- Dodanie filmu do biblioteki = jedna linijka w `js/library.js`, np. `{ id: "ID_Z_LINKU", lesson: "hotel-2", title: "…", src: "yt" }`.
+- Dodanie filmu do biblioteki = jedna linijka w `js/library.js`, np. `{ id: "ID_Z_LINKU", lesson: "hotel-2", type: "dialog", title: "…", desc: "opis po polsku", src: "yt" }`.
 
 ## Plan rozwoju
 

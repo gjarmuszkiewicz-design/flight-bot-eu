@@ -6,7 +6,7 @@ import { buildLessonQueue, buildReviewQueue, runSession } from "./lesson.js";
 import { speak, listen, canListen, stopSpeaking, englishVoices, escapeHtml } from "./speech.js";
 import { SCENARIOS, chatTurn, videoQuestions, describeError } from "./ai.js";
 import { SOURCES, TOPIC_SEARCHES, youtubeSearchUrl, parseYouTubeId, embedUrl, GENERIC_TASKS } from "./videos.js";
-import { LIBRARY, SERIES, SRC_LABEL, CHAPTER_TASKS, thumbUrl, watchUrl } from "./library.js";
+import { LIBRARY, SERIES, SRC_LABEL, TYPE_LABEL, CHAPTER_TASKS, thumbUrl, watchUrl } from "./library.js";
 
 const app = document.getElementById("app");
 const LANG = COURSE.lang;
@@ -46,10 +46,11 @@ const TABS = [
 
 function route() {
   stopSpeaking();
-  const [tab, arg] = (location.hash.slice(2) || "learn").split("/");
+  const [tab, arg, extra] = (location.hash.slice(2) || "learn").split("/");
   if (tab === "lesson") return openLesson(arg);
   if (tab === "talk" && arg) return openChat(arg);
-  if (tab === "watch" && arg) return openWatch(arg);
+  if (tab === "watch" && arg) return openWatch(arg, extra === "lesson");
+  if (tab === "pick" && arg) return openPick(arg);
   if (tab === "video" && arg) {
     // stare linki do własnych filmów
     const own = store.getState().videos.find((v) => v.id === arg);
@@ -116,7 +117,10 @@ function screenLearn() {
       ${videoCard(recVideo, { big: true })}
     </section>` : ""}
     ${COURSE.chapters.map((ch) => {
-      const doneCount = ch.lessons.filter((l) => store.lessonProgress(l.id).level >= 1).length;
+      const doneCount = ch.lessons.filter((l) => {
+        const p = store.lessonProgress(l.id);
+        return p.level >= 1 && (p.video || !videosForLesson(l.id).length);
+      }).length;
       return `
       <section class="chapter">
         <div class="chapter-head">
@@ -129,11 +133,15 @@ function screenLearn() {
             const p = store.lessonProgress(l.id);
             const open = isUnlocked(l.id);
             const crowns = "👑".repeat(p.level) || "";
-            return `<a class="node ${open ? "" : "locked"} ${p.level ? "done" : ""} ${i % 2 ? "shift" : ""}" ${open ? `href="#/lesson/${l.id}"` : ""}>
-              <span class="node-circle">${open ? (p.level >= 3 ? "🏆" : p.level ? "⭐" : "▶") : "🔒"}</span>
-              <span class="node-title">${escapeHtml(l.title)}</span>
-              <span class="node-crowns">${crowns}</span>
-            </a>`;
+            const hasVideos = videosForLesson(l.id).length > 0;
+            return `<div class="node-wrap ${i % 2 ? "shift" : ""}">
+              <a class="node ${open ? "" : "locked"} ${p.level ? "done" : ""}" ${open ? `href="#/lesson/${l.id}"` : ""}>
+                <span class="node-circle">${open ? (p.level >= 3 ? "🏆" : p.level ? "⭐" : "▶") : "🔒"}</span>
+                <span class="node-title">${escapeHtml(l.title)}</span>
+                <span class="node-crowns">${crowns}</span>
+              </a>
+              ${p.level && hasVideos ? `<a class="node-video ${p.video ? "done" : ""}" href="#/pick/${l.id}">${p.video ? "🎓 Zaliczona" : "🎬 Brakuje scenki"}</a>` : ""}
+            </div>`;
           }).join("")}
         </div>
       </section>`;
@@ -158,11 +166,11 @@ function openLesson(id) {
     title: found.lesson.title,
     lessonId: id,
     queue: buildLessonQueue(found.lesson, level),
-    finishVideo: () => {
-      const v = videosForLesson(id).find((x) => !store.getState().watched[x.id]) || videosForLesson(id)[0];
-      return v ? { href: `#/watch/${v.id}`, label: "🎬 Zobacz to w prawdziwej scence" } : null;
+    // po ćwiczeniach ostatni krok lekcji: wybór i obejrzenie scenki
+    onExit: (result) => {
+      flushToasts();
+      location.hash = result && videosForLesson(id).length ? `#/pick/${id}` : "#/learn";
     },
-    onExit: () => { location.hash = "#/learn"; flushToasts(); },
   });
 }
 
@@ -345,7 +353,7 @@ function videoCard(v, { big = false } = {}) {
   const found = v.lesson ? findLesson(v.lesson) : null;
   return `<a class="vcard ${big ? "big" : ""}" href="#/watch/${v.id}">
     <span class="vthumb"><img src="${thumbUrl(v.id)}" alt="" loading="lazy" onerror="this.style.visibility='hidden'">${v.short ? '<i class="vbadge">Short</i>' : ""}${st.watched[v.id] ? '<i class="vdone">✅</i>' : ""}</span>
-    <span class="vtitle">${escapeHtml(v.title)}</span>
+    <span class="vtitle">${escapeHtml(v.desc || v.title)}</span>
     ${found ? `<small class="muted">${found.chapter.emoji} ${escapeHtml(found.lesson.title)}</small>` : ""}
   </a>`;
 }
@@ -467,7 +475,42 @@ function findVideo(ytId) {
   return null;
 }
 
-function openWatch(ytId) {
+// Ostatni krok lekcji: 3–4 scenki do wyboru, obejrzenie jednej zalicza lekcję
+function openPick(lessonId) {
+  const found = findLesson(lessonId);
+  if (!found) return (location.hash = "#/learn");
+  const st = store.getState();
+  const p = store.lessonProgress(lessonId);
+  const vids = videosForLesson(lessonId);
+  if (!vids.length) return (location.hash = "#/learn");
+  app.innerHTML = `
+    <div class="session">
+      <header class="session-top">
+        <a class="icon-btn" href="#/learn" aria-label="Zamknij">✕</a>
+        <div class="progress"><div class="progress-fill" style="width:100%"></div></div>
+        <span class="icon-btn small">🎬</span>
+      </header>
+      <main class="ex-body">
+        <p class="ex-label">${p.video ? "🎓 Lekcja zaliczona – obejrzyj kolejną scenkę" : "Ostatni krok: wybierz scenkę"}</p>
+        <p class="muted">${found.chapter.emoji} <b>${escapeHtml(found.lesson.title)}</b> – zobacz, jak te zwroty brzmią w prawdziwej rozmowie. Wybierz jeden film i obejrzyj go${p.video ? "" : ", żeby zaliczyć lekcję"}.</p>
+        <div class="pick-list">
+          ${vids.map((v) => `
+            <a class="pick" href="#/watch/${v.id}/lesson">
+              <span class="vthumb"><img src="${thumbUrl(v.id)}" alt="" loading="lazy" onerror="this.style.visibility='hidden'">
+                ${v.short ? '<i class="vbadge">Short</i>' : ""}${st.watched[v.id] ? '<i class="vdone">✅</i>' : ""}</span>
+              <span class="pick-text">
+                <small class="pick-type">${v.src === "voa" ? "📺 Serial VOA" : TYPE_LABEL[v.type] || ""}${v.short ? " · ok. 1 min" : ""}</small>
+                <b>${escapeHtml(v.desc || v.title)}</b>
+                <small class="muted">${escapeHtml(v.title)}</small>
+              </span>
+            </a>`).join("")}
+        </div>
+      </main>
+      <footer class="ex-foot"><a class="btn btn-ghost" href="#/learn">${p.video ? "Wróć do lekcji" : "Pomiń na razie – obejrzę później"}</a></footer>
+    </div>`;
+}
+
+function openWatch(ytId, fromLesson = false) {
   const st = store.getState();
   const v = findVideo(ytId);
   if (!v) return (location.hash = "#/video");
@@ -479,13 +522,14 @@ function openWatch(ytId) {
   app.innerHTML = `
     <div class="session">
       <header class="session-top">
-        <a class="icon-btn" href="#/video" aria-label="Wróć">←</a>
+        <a class="icon-btn" href="${fromLesson && v.lesson ? `#/pick/${v.lesson}` : "#/video"}" aria-label="Wróć">←</a>
         <div class="chat-title">${escapeHtml(v.title)}</div>
         ${v.kind === "own" ? `<button class="icon-btn small" id="del" title="Usuń film">🗑</button>` : `<a class="icon-btn small" href="${watchUrl(ytId)}" target="_blank" rel="noopener" title="Otwórz w YouTube">↗</a>`}
       </header>
       <main class="ex-body">
         <div class="video-wrap ${v.short ? "short" : ""}"><div class="player"></div></div>
         <div class="broken" hidden></div>
+        ${v.desc ? `<p class="vdesc">${escapeHtml(v.desc)}</p>` : ""}
         <p class="muted vmeta">${v.src ? escapeHtml(SRC_LABEL[v.src] || "") : ""}${found ? ` · ${found.chapter.emoji} lekcja <a href="#/lesson/${found.lesson.id}">${escapeHtml(found.lesson.title)}</a>` : ""}${v.series ? ` · ${escapeHtml(v.series)}` : ""}</p>
         <div class="card steps">
           <b>Jak oglądać</b>
@@ -505,7 +549,9 @@ function openWatch(ytId) {
             <div class="vq-row"><button class="mic-btn small">🎤</button><div class="heard"></div></div>
           </div>`).join("")}
       </main>
-      <footer class="ex-foot"><button class="btn btn-primary" id="doneVid">${st.watched[ytId] ? "Obejrzane ✔ – następna scenka" : "Obejrzane ✔ (+10 XP)"}</button></footer>
+      <footer class="ex-foot"><button class="btn btn-primary" id="doneVid">${
+        fromLesson && v.lesson && !store.lessonProgress(v.lesson).video ? "Obejrzane ✔ – zalicz lekcję (+15 XP)"
+        : st.watched[ytId] ? "Obejrzane ✔ – następna scenka" : "Obejrzane ✔ (+10 XP)"}</button></footer>
     </div>`;
 
   mountPlayer(app.querySelector(".player"), ytId, () => {
@@ -516,7 +562,8 @@ function openWatch(ytId) {
     box.hidden = false;
     box.innerHTML = `<p>😕 Autor tego filmu nie pozwala go odtwarzać poza YouTube (albo film zniknął). Ukryłem go z listy.</p>
       <div class="btn-row"><a class="btn btn-ghost" href="${watchUrl(ytId)}" target="_blank" rel="noopener">Otwórz w YouTube ↗</a>
-      ${next ? `<a class="btn btn-primary" href="#/watch/${next.id}">Następna scenka ▶</a>` : ""}</div>`;
+      ${fromLesson && v.lesson ? `<a class="btn btn-primary" href="#/pick/${v.lesson}">Wybierz inną scenkę ▶</a>`
+        : next ? `<a class="btn btn-primary" href="#/watch/${next.id}">Następna scenka ▶</a>` : ""}</div>`;
   });
 
   app.querySelectorAll("[data-say]").forEach((b) => (b.onclick = () => speak(b.dataset.say, { lang: LANG })));
@@ -561,8 +608,15 @@ function openWatch(ytId) {
       store.addStat("videos");
       store.addXp(10);
     }
+    // obejrzenie dowolnej scenki z lekcji zalicza tę lekcję
+    const passed = v.lesson && store.lessonProgress(v.lesson).level >= 1 && store.completeLessonVideo(v.lesson, ytId);
+    if (passed) {
+      store.addXp(5);
+      toast(`🎓 Lekcja „${findLesson(v.lesson).lesson.title}” zaliczona!`);
+    }
     store.save();
     flushToasts();
+    if (fromLesson) return (location.hash = "#/learn");
     const next = nextRec();
     location.hash = next ? `#/watch/${next.id}` : "#/video";
   };
