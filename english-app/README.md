@@ -7,7 +7,7 @@ Aplikacja na telefon do nauki **mówienia** po angielsku. Mechanika podobna do D
 | Funkcja | Opis |
 |---|---|
 | 🧭 **Test poziomu** | na start 20 pytań (~5 min): uzupełnianie zdań, znaczenie, słuchanie, wybór najlepszej odpowiedzi – od A1 do C1, z opcją „Nie wiem”. Wynik ustawia poziom, ale zawsze możesz go zmienić (zakładki nad ścieżką lub *Profil → Poziom*) |
-| 📚 **Kurs – 3 poziomy** | **Początkujący** (A1–A2), **Średni** (B1–B2), **Zaawansowany** (C1). Każdy poziom ma te same **8 tematów × 3 lekcje** – podróże są i dla początkujących (odprawa), i dla średnich (odwołany lot, kontrola paszportowa), i dla zaawansowanych (negocjacje z linią, trudne pytania na granicy). Razem 72 lekcje, ~350 słówek i ~360 zwrotów |
+| 📚 **Kurs – 3 poziomy** | **Początkujący** (A1–A2), **Średni** (B1–B2), **Zaawansowany** (C1). Każdy poziom ma te same **8 tematów × 3 lekcje** – podróże są i dla początkujących (odprawa), i dla średnich (odwołany lot, kontrola paszportowa), i dla zaawansowanych (negocjacje z linią, trudne pytania na granicy). Razem 72 lekcje, ~380 słówek i 360 zwrotów |
 | 🧩 **Ćwiczenia** | nowe słówko z wymową, wybór tłumaczenia, „co słyszysz?”, układanie zdania z kafelków, dyktando, **powiedz na głos**, **powiedz to po angielsku** (z polskiego), **scenka**, w której odgrywasz swoją rolę |
 | 🎤 **Mówienie** | rozpoznawanie mowy w przeglądarce – aplikacja pokazuje, co usłyszała, ile % się zgadza i które słowa wyszły źle. Przycisk 🐢 czyta wolniej. Przycisk 🎙️/🔇 wyłącza mówienie na 15 min (np. w autobusie) |
 | 👑 **Poziomy lekcji** | każdą lekcję przechodzisz 3 razy: najpierw rozpoznajesz, potem powtarzasz na głos, na końcu mówisz z pamięci z polskiego |
