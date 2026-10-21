@@ -1,0 +1,10 @@
+{
+  "name": "speakup-tools",
+  "private": true,
+  "type": "module",
+  "description": "Narzędzia do generowania nagrań lektora (Kokoro-82M)",
+  "dependencies": {
+    "onnxruntime-node": "1.22.0",
+    "phonemizer": "1.2.1"
+  }
+}

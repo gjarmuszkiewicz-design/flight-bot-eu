@@ -715,8 +715,15 @@ function screenMe() {
       <label>Cel dzienny (XP)
         <select id="goal">${[10, 20, 30, 50, 80].map((g) => `<option ${g === st.profile.dailyGoal ? "selected" : ""}>${g}</option>`).join("")}</select>
       </label>
-      <label>Głos lektora
-        <select id="voice"><option value="">Automatyczny</option>${voices.map((v) => `<option value="${escapeHtml(v.voiceURI)}" ${v.voiceURI === st.settings.voiceURI ? "selected" : ""}>${escapeHtml(v.name)} (${v.lang})</option>`).join("")}</select>
+      <label>Lektor
+        <select id="voiceMode">
+          <option value="natural" ${st.settings.voiceMode !== "system" ? "selected" : ""}>Naturalne głosy (nagrania) – zalecane</option>
+          <option value="system" ${st.settings.voiceMode === "system" ? "selected" : ""}>Głos systemowy telefonu</option>
+        </select>
+      </label>
+      <p class="muted small-note">Naturalne nagrania czytają kobiety i mężczyźni z akcentem amerykańskim i brytyjskim. Głos systemowy jest używany tam, gdzie nagrania nie ma (np. odpowiedzi AI).</p>
+      <label>Głos systemowy (zapasowy)
+        <select id="voice"><option value="">Automatyczny – najlepszy dostępny</option>${voices.map((v) => `<option value="${escapeHtml(v.voiceURI)}" ${v.voiceURI === st.settings.voiceURI ? "selected" : ""}>${escapeHtml(v.name)} (${v.lang})</option>`).join("")}</select>
       </label>
       <label>Tempo mowy: <span id="rateVal">${st.settings.rate}</span>
         <input type="range" id="rate" min="0.6" max="1.2" step="0.05" value="${st.settings.rate}">
@@ -747,12 +754,14 @@ function screenMe() {
 
   el.querySelector("#rate").oninput = (e) => (el.querySelector("#rateVal").textContent = e.target.value);
   el.querySelector("#testVoice").onclick = () => {
+    st.settings.voiceMode = el.querySelector("#voiceMode").value;
     st.settings.voiceURI = el.querySelector("#voice").value;
     st.settings.rate = +el.querySelector("#rate").value;
     speak("Hi! Can I get a large latte to go, please?", { lang: LANG });
   };
   el.querySelector("#saveSettings").onclick = () => {
     st.profile.dailyGoal = +el.querySelector("#goal").value;
+    st.settings.voiceMode = el.querySelector("#voiceMode").value;
     st.settings.voiceURI = el.querySelector("#voice").value;
     st.settings.rate = +el.querySelector("#rate").value;
     st.settings.autoListen = el.querySelector("#autoListen").checked;

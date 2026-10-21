@@ -71,6 +71,16 @@ Modele do wyboru w ustawieniach: **Claude Opus 5.5** (domyślnie, najlepsze rozm
 - **Samonaprawianie:** część autorów blokuje odtwarzanie poza YouTube albo usuwa filmy. Aplikacja to wykrywa (przez YouTube IFrame API), ukrywa taki film, proponuje link „Otwórz w YouTube” i następną scenkę.
 - Dodanie filmu do biblioteki = jedna linijka w `js/library.js`, np. `{ id: "ID_Z_LINKU", lesson: "hotel-2", type: "dialog", title: "…", desc: "opis po polsku", src: "yt" }`.
 
+## Lektor – naturalne głosy
+
+Wszystkie słówka, zwroty, dialogi i pytania (~1500 nagrań) są przeczytane przez **Kokoro-82M** – otwarty, neuronowy syntezator mowy (licencja Apache-2.0, nagrania można swobodnie wykorzystywać). Nagrania leżą w `audio/` jako MP3, więc działają na każdym telefonie, także offline.
+
+- Głosy: kobiece **Heart**, **Bella** (USA), **Emma** (UK) i męskie **Michael**, **Fenrir** (USA), **George** (UK).
+- W scenkach rozmówca i Ty macie różne głosy (kobieta ↔ mężczyzna); słówka i zwroty idą na zmianę.
+- Przycisk 🐢 zwalnia nagranie bez zmiany wysokości głosu. Tempo ogólne – *Profil → Tempo mowy*.
+- Tam, gdzie nagrania nie ma (odpowiedzi rozmówcy AI, własne filmy), czyta najlepszy głos systemowy telefonu. Na iPhonie warto pobrać lepszy: *Ustawienia → Dostępność → Treść mówiona → Głosy → Angielski*, np. „Ava (Premium)” lub „Evan (Enhanced)”, i wybrać go w *Profil → Głos systemowy*.
+- Po dopisaniu nowych lekcji: `english-app/tools/generate-audio.mjs` nagra tylko brakujące teksty (instrukcja na górze pliku).
+
 ## Plan rozwoju
 
 **Etap 1 – teraz (dla Ciebie)** ✅ ta wersja.
@@ -79,7 +89,6 @@ Modele do wyboru w ustawieniach: **Claude Opus 5.5** (domyślnie, najlepsze rozm
 - Rozdziały: praca/biuro, telefon i e-maile, wynajem auta, mieszkanie, sport, randka/rozmowa z obcokrajowcem, reklamacje.
 - Wbudowana biblioteka wideo z pytaniami (patrz wyżej).
 - Ocena wymowy przez AI (nagranie audio → model mowy → ocena głosek), zamiast samego porównania tekstu.
-- Bardziej naturalne głosy lektora (TTS w chmurze, np. ElevenLabs / OpenAI / Google) – teraz używane są głosy wbudowane w telefon.
 - Rozmowa „głos w głos” w czasie rzeczywistym (model audio-to-audio) zamiast mikrofon → tekst → głos.
 - Powiadomienia przypominające o serii.
 
@@ -102,13 +111,16 @@ english-app/
 ├── sw.js                 # tryb offline
 ├── css/style.css
 ├── icons/
+├── audio/                # nagrania lektora (MP3) + index.json
+├── tools/                # generator nagrań (Kokoro-82M)
 └── js/
     ├── app.js     # nawigacja i ekrany
     ├── course.js  # TREŚĆ KURSU: poziom początkujący + lista poziomów
     ├── course-levels.js # poziom średni i zaawansowany
     ├── placement.js     # test poziomujący (pytania i ocena)
     ├── lesson.js  # silnik lekcji i rodzaje ćwiczeń
-    ├── speech.js  # czytanie i rozpoznawanie mowy, ocena wypowiedzi
+    ├── speech.js  # lektor (nagrania / głos systemowy), rozpoznawanie mowy, ocena wypowiedzi
+    ├── audio-key.js # tekst → plik nagrania
     ├── store.js   # postęp, XP, seria, odznaki, wyzwania, powtórki
     ├── ai.js      # rozmówca AI (Claude)
     └── videos.js  # źródła wideo i obsługa linków YouTube

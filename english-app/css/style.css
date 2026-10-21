@@ -121,6 +121,7 @@ details summary { cursor: pointer; color: var(--blue); font-weight: 600; margin:
 .level-pick { display: grid; gap: 8px; }
 .pbar { display: grid; grid-template-columns: 110px 1fr 40px; gap: 10px; align-items: center; margin: 6px 0; }
 .pbar .qbar { margin: 0; }
+.small-note { font-size: 0.85rem; margin: -4px 0 8px; }
 .choice.dunno { color: var(--muted); border-style: dashed; }
 .small-count { font-size: 0.85rem; min-width: 40px; text-align: right; }
 .quick { display: grid; gap: 10px; margin-bottom: 20px; }

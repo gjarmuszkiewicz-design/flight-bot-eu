@@ -13,7 +13,7 @@ const DEFAULT_STATE = {
   stats: { spoken: 0, lessonsDone: 0, reviews: 0, chats: 0, videos: 0, perfect: 0 },
   badges: {}, // badgeId: timestamp
   quests: { day: null, list: [] },
-  settings: { rate: 0.95, voiceURI: "", autoListen: true, apiKey: "", model: "claude-opus-5-5" },
+  settings: { rate: 0.95, voiceMode: "natural", voiceURI: "", autoListen: true, apiKey: "", model: "claude-opus-5-5" },
   videos: [], // własne filmy użytkownika
   watched: {}, // ytId: kiedy obejrzany
   hiddenVideos: {}, // ytId: filmy, których nie da się osadzić

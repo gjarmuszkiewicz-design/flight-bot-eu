@@ -1,12 +1,55 @@
-// Mowa: czytanie na głos (speechSynthesis) i rozpoznawanie mowy (Web Speech API).
+// Mowa: lektor (naturalne nagrania MP3 lub głos systemowy) i rozpoznawanie mowy (Web Speech API).
 // Działa w Chrome na Androidzie i w Safari na iPhonie – bez serwera i bez opłat.
 
 import { getState } from "./store.js";
+import { clipHash } from "./audio-key.js";
 
 const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
 export const canListen = !!Recognition;
 export const canSpeak = "speechSynthesis" in window;
+
+// ---------- Naturalny lektor: nagrania wygenerowane wcześniej (tools/generate-audio.mjs) ----------
+
+let clipIndex = {}; // skrót tekstu → głos
+fetch("audio/index.json")
+  .then((r) => (r.ok ? r.json() : {}))
+  .then((j) => (clipIndex = j))
+  .catch(() => {});
+
+// Jeden odtwarzacz na całą aplikację – iOS pozwala mu grać kolejne nagrania
+// (np. w scence) bez ponownego dotknięcia ekranu.
+const player = new Audio();
+player.preload = "auto";
+let pending = null; // resolve aktualnie odtwarzanego nagrania
+
+export function hasClip(text) {
+  return !!clipIndex[clipHash(text)];
+}
+
+function playClip(text, slow) {
+  return new Promise((resolve, reject) => {
+    finishPending();
+    pending = resolve;
+    const rate = getState().settings.rate || 0.95;
+    player.onended = () => finishPending();
+    player.onerror = () => { pending = null; reject(new Error("clip")); };
+    player.src = `audio/${clipHash(text)}.mp3`;
+    // nagrania mają już tempo 0.95 – ustawienie tempa w Profilu skaluje je względnie
+    player.playbackRate = (rate / 0.95) * (slow ? 0.7 : 1);
+    player.preservesPitch = true;
+    player.webkitPreservesPitch = true;
+    player.play().catch((e) => { pending = null; reject(e); });
+  });
+}
+
+function finishPending() {
+  const r = pending;
+  pending = null;
+  if (r) r();
+}
+
+// ---------- Głos systemowy (zapas: odpowiedzi AI, własne filmy) ----------
 
 let voicesCache = [];
 function refreshVoices() {
@@ -17,8 +60,21 @@ if (canSpeak) {
   speechSynthesis.onvoiceschanged = refreshVoices;
 }
 
+// Im lepiej brzmi głos, tym wyżej: neuronowe/„premium” > Google > zwykłe > „compact”
+function voiceScore(v) {
+  const n = v.name.toLowerCase();
+  let s = 0;
+  if (/natural|neural|premium|online/.test(n)) s += 50;
+  if (/enhanced|wavenet|studio|siri/.test(n)) s += 40;
+  if (/google/.test(n)) s += 20;
+  if (/samantha|daniel|karen|moira|serena|ava|zoe|evan|nathan|aria|jenny|guy/.test(n)) s += 10;
+  if (/compact|espeak|robot|novelty|bad news|bells|bubbles|whisper|zarvox|trinoids|albert|jester|organ|cellos|superstar/.test(n)) s -= 60;
+  if (v.localService === false) s += 5;
+  return s;
+}
+
 export function englishVoices(lang = "en") {
-  return voicesCache.filter((v) => v.lang.toLowerCase().startsWith(lang));
+  return voicesCache.filter((v) => v.lang.toLowerCase().startsWith(lang)).sort((a, b) => voiceScore(b) - voiceScore(a));
 }
 
 function pickVoice(lang) {
@@ -27,7 +83,7 @@ function pickVoice(lang) {
   return list.find((v) => v.voiceURI === voiceURI) || list.find((v) => v.lang === lang) || list[0] || null;
 }
 
-export function speak(text, { lang = "en-US", slow = false } = {}) {
+function speakSystem(text, lang, slow) {
   return new Promise((resolve) => {
     if (!canSpeak) return resolve();
     speechSynthesis.cancel();
@@ -42,7 +98,22 @@ export function speak(text, { lang = "en-US", slow = false } = {}) {
   });
 }
 
+// Czyta tekst: naturalne nagranie, jeśli istnieje, w przeciwnym razie głos systemowy
+export async function speak(text, { lang = "en-US", slow = false } = {}) {
+  const natural = getState().settings.voiceMode !== "system";
+  if (natural && lang.startsWith("en") && hasClip(text)) {
+    try {
+      return await playClip(text, slow);
+    } catch {
+      /* brak pliku / blokada odtwarzania – czytamy głosem systemowym */
+    }
+  }
+  return speakSystem(text, lang, slow);
+}
+
 export function stopSpeaking() {
+  player.pause();
+  finishPending();
   if (canSpeak) speechSynthesis.cancel();
 }
 
