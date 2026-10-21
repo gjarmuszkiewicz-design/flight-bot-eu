@@ -16,3 +16,6 @@ Telegram bot do wyszukiwania tanich lotów w Europie (UE).
 
 ## Deploy
 Railway.app (automatic deployment)
+
+## Inne projekty w repo
+- [`english-app/`](english-app/) – Speak Up: aplikacja do nauki mówienia po angielsku (PWA na telefon)

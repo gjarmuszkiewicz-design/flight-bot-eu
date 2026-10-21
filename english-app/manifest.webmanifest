@@ -1,0 +1,17 @@
+{
+  "name": "Speak Up – angielski w praktyce",
+  "short_name": "Speak Up",
+  "description": "Nauka mówienia po angielsku w prawdziwych sytuacjach: lotnisko, hotel, sklep, small talk.",
+  "lang": "pl",
+  "start_url": "./#/learn",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#ffffff",
+  "theme_color": "#58cc02",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
